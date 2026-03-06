@@ -1,19 +1,16 @@
 ---
 name: observe
 description: Extract typed observations from session transcripts. Reads recorded sessions incrementally, scores by importance/confidence/surprise, routes to daily logs. Triggers on "/observe", "process transcripts", "extract observations".
-version: "2.0"
-generated_from: "mnemos-v0.2"
-user-invocable: true
-context: fork
-model: sonnet
-allowed-tools: Read, Write, Edit, Grep, Glob, Bash
-argument-hint: "[--all] [--session ID] [--since YYYY-MM-DD] — Process all unprocessed transcripts (default), a specific session, or sessions since a date."
+metadata:
+  version: "2.0"
+  generated_from: "mnemos-v0.2"
+  argument-hint: "[--all] [--session ID] [--since YYYY-MM-DD] — Process all unprocessed transcripts (default), a specific session, or sessions since a date."
 ---
 
 ## Vault Path Resolution (mnemos)
 
 Before any file operations, resolve the vault root:
-1. Read `.mnemos.yaml` from the workspace root (the directory containing `.claude/`)
+1. Read `.mnemos.yaml` from the workspace root (the project directory where you are running)
 2. Extract `vault_path` — this is the root for ALL vault operations
 3. All paths in this skill (notes/, ops/, memory/, self/) are RELATIVE to vault_path
 4. If `.mnemos.yaml` does not exist or vault_path is not set, fall back to the current working directory

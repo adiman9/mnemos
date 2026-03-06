@@ -1,19 +1,16 @@
 ---
 name: consolidate
 description: Promote high-value working memory observations to the long-term knowledge pipeline. Scans recent daily logs, applies promotion criteria, and batches promoted items through /reduce. Triggers on "/consolidate", "promote observations", "crystallize memory".
-version: "1.0"
-generated_from: "mnemos-v0.1"
-user-invocable: true
-context: fork
-model: sonnet
-allowed-tools: Read, Write, Edit, Grep, Glob, Bash, Task
-argument-hint: "[--days N] [--dry-run] — N = number of days to scan (default: 7). --dry-run shows what would be promoted without acting."
+metadata:
+  version: "1.0"
+  generated_from: "mnemos-v0.1"
+  argument-hint: "[--days N] [--dry-run] — N = number of days to scan (default: 7). --dry-run shows what would be promoted without acting."
 ---
 
 ## Vault Path Resolution (mnemos)
 
 Before any file operations, resolve the vault root:
-1. Read `.mnemos.yaml` from the workspace root (the directory containing `.claude/`)
+1. Read `.mnemos.yaml` from the workspace root (the project directory where you are running)
 2. Extract `vault_path` — this is the root for ALL vault operations
 3. All paths in this skill (notes/, ops/, memory/, self/) are RELATIVE to vault_path
 4. If `.mnemos.yaml` does not exist or vault_path is not set, fall back to the current working directory

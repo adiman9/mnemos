@@ -17,7 +17,7 @@ Memory is not the main job. Coding, research, debugging, and delivery stay prima
 The vault is configurable and is often **not** your current working directory.
 
 Before any memory operation:
-1. Read `.mnemos.yaml` from the workspace root (the directory containing `.claude/`)
+1. Read `.mnemos.yaml` from the workspace root (the project directory where you are running)
 2. Resolve `vault_path`
 3. Treat **all** mnemos paths as relative to `vault_path`
 4. If `.mnemos.yaml` is missing or `vault_path` is unset, fall back to current working directory

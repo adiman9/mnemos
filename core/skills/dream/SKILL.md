@@ -1,19 +1,16 @@
 ---
 name: dream
 description: Generate speculative cross-domain connections in two modes: daily context-driven dreaming from today's observations, or weekly deep random sampling across domains. Scores speculations by novelty and files high-scoring ones for review. Triggers on "/dream", "find cross-domain connections", "speculate".
-version: "1.0"
-generated_from: "mnemos-v0.1"
-user-invocable: true
-context: fork
-model: sonnet
-allowed-tools: Read, Write, Edit, Grep, Glob, Bash
-argument-hint: "[--daily | --weekly] [--samples N] [--domains D1,D2] [--review]"
+metadata:
+  version: "1.0"
+  generated_from: "mnemos-v0.1"
+  argument-hint: "[--daily | --weekly] [--samples N] [--domains D1,D2] [--review]"
 ---
 
 ## Vault Path Resolution (mnemos)
 
 Before any file operations, resolve the vault root:
-1. Read `.mnemos.yaml` from the workspace root (the directory containing `.claude/`)
+1. Read `.mnemos.yaml` from the workspace root (the project directory where you are running)
 2. Extract `vault_path` — this is the root for ALL vault operations
 3. All paths in this skill (notes/, ops/, memory/, self/) are RELATIVE to vault_path
 4. If `.mnemos.yaml` does not exist or vault_path is not set, fall back to the current working directory

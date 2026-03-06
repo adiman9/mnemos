@@ -1,17 +1,15 @@
 ---
 name: refactor
 description: Plan vault restructuring from config changes. Compares config.yaml against derivation.md, identifies dimension shifts, shows restructuring plan, executes on approval. Triggers on "/refactor", "restructure vault".
-version: "1.0"
-generated_from: "arscontexta-v1.6"
-user-invocable: true
-context: fork
-allowed-tools: Read, Write, Edit, Grep, Glob, Bash
-argument-hint: "[dimension|--dry-run] — focus on specific dimension or preview without approval prompt"
+metadata:
+  version: "1.0"
+  generated_from: "arscontexta-v1.6"
+  argument-hint: "[dimension|--dry-run] — focus on specific dimension or preview without approval prompt"
 ---
 ## Vault Path Resolution (mnemos)
 
 Before any file operations, resolve the vault root:
-1. Read `.mnemos.yaml` from the workspace root (the directory containing `.claude/`)
+1. Read `.mnemos.yaml` from the workspace root (the project directory where you are running)
 2. Extract `vault_path` — this is the root for ALL vault operations
 3. All paths in this skill (notes/, ops/, inbox/, self/, memory/, templates/) are RELATIVE to vault_path
 4. If `.mnemos.yaml` does not exist or vault_path is not set, fall back to the current working directory

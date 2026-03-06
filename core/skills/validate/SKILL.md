@@ -1,15 +1,11 @@
 ---
 name: validate
 description: Schema validation for notes. Checks against domain-specific templates. Validates required fields, enum values, description quality, and link health. Non-blocking — warns but doesn't prevent capture. Triggers on "/validate", "/validate [note]", "check schema", "validate note", "validate all".
-user-invocable: true
-allowed-tools: Read, Grep, Glob
-context: fork
-model: sonnet
 ---
 ## Vault Path Resolution (mnemos)
 
 Before any file operations, resolve the vault root:
-1. Read `.mnemos.yaml` from the workspace root (the directory containing `.claude/`)
+1. Read `.mnemos.yaml` from the workspace root (the project directory where you are running)
 2. Extract `vault_path` — this is the root for ALL vault operations
 3. All paths in this skill (notes/, ops/, inbox/, self/, memory/, templates/) are RELATIVE to vault_path
 4. If `.mnemos.yaml` does not exist or vault_path is not set, fall back to the current working directory

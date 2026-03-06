@@ -1,17 +1,14 @@
 ---
 name: curiosity
 description: Proactive research discovery — analyzes recent vault activity, generates research candidates, scores by expected information gain, auto-triggers /learn for high-value topics. Triggers on "/curiosity", "what should I research", "find research opportunities".
-version: "1.0"
-generated_from: "mnemos-v0.1"
-user-invocable: true
-context: fork
-model: sonnet
-allowed-tools: Read, Write, Edit, Grep, Glob, Bash, mcp__exa__web_search_exa, mcp__exa__deep_researcher_start, mcp__exa__deep_researcher_check, WebSearch
-argument-hint: "[--dry-run] [--threshold N] [--max N] — dry-run shows candidates without executing. threshold = EIG minimum (default: 0.7). max = maximum research triggers (default: 3)."
+metadata:
+  version: "1.0"
+  generated_from: "mnemos-v0.1"
+  argument-hint: "[--dry-run] [--threshold N] [--max N] — dry-run shows candidates without executing. threshold = EIG minimum (default: 0.7). max = maximum research triggers (default: 3)."
 ---
 ## Vault Path Resolution (mnemos)
 Before any file operations, resolve the vault root:
-1. Read `.mnemos.yaml` from the workspace root (the directory containing `.claude/`)
+1. Read `.mnemos.yaml` from the workspace root (the project directory where you are running)
 2. Extract `vault_path` — this is the root for ALL vault operations
 3. All paths in this skill (notes/, ops/, memory/, self/) are RELATIVE to vault_path
 4. If `.mnemos.yaml` does not exist or vault_path is not set, fall back to the current working directory

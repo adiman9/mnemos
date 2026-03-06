@@ -1,21 +1,18 @@
 ---
 name: enrich
 description: Add content from a new source to an existing note. Updates the note body with new evidence, examples, or framing, and maintains multi-source attribution in the footer. Triggers on "/enrich", "/enrich [note]", "enrich this note".
-version: "1.0"
-generated_from: "mnemos-v0.1"
-user-invocable: true
-context: fork
-model: sonnet
-allowed-tools: Read, Write, Edit, Grep, Glob, Bash
-argument-hint: "[note] [--handoff] — note to enrich (or task file context provides this)"
+metadata:
+  version: "1.0"
+  generated_from: "mnemos-v0.1"
+  argument-hint: "[note] [--handoff] — note to enrich (or task file context provides this)"
 ---
 
 ## Vault Path Resolution (mnemos)
 
 Before any file operations, resolve the vault root:
-1. Read `.mnemos.yaml` from the workspace root (the directory containing `.claude/`)
+1. Read `.mnemos.yaml` from the workspace root (the project directory where you are running)
 2. Extract `vault_path` — this is the root for ALL vault operations
-3. All paths in this skill (notes/, ops/, inbox/, self/, memory/, templates/) are RELATIVE to vault_path
+3. All paths in this skill (notes/, inbox/, self/, memory/, templates/) are RELATIVE to vault_path
 4. If `.mnemos.yaml` does not exist or vault_path is not set, fall back to the current working directory
 
 Example: if vault_path is `/data/vault`, then `ops/queue/queue.json` resolves to `/data/vault/ops/queue/queue.json`.

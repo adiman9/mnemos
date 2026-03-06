@@ -1,16 +1,14 @@
 ---
 name: reduce
 description: Extract structured knowledge from source material. Comprehensive extraction is the default — every insight that serves the domain gets extracted. For domain-relevant sources, skip rate must be below 10%. Zero extraction from a domain-relevant source is a BUG. Triggers on "/reduce", "/reduce [file]", "extract insights", "mine this", "process this".
-version: "1.0"
-generated_from: "arscontexta-v1.6"
-user-invocable: true
-allowed-tools: Read, Write, Grep, Glob, mcp__qmd__vector_search
-context: fork
+metadata:
+  version: "1.0"
+  generated_from: "arscontexta-v1.6"
 ---
 ## Vault Path Resolution (mnemos)
 
 Before any file operations, resolve the vault root:
-1. Read `.mnemos.yaml` from the workspace root (the directory containing `.claude/`)
+1. Read `.mnemos.yaml` from the workspace root (the project directory where you are running)
 2. Extract `vault_path` — this is the root for ALL vault operations
 3. All paths in this skill (notes/, ops/, inbox/, self/, memory/, templates/) are RELATIVE to vault_path
 4. If `.mnemos.yaml` does not exist or vault_path is not set, fall back to the current working directory

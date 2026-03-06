@@ -1,18 +1,15 @@
 ---
 name: stats
 description: Show vault statistics and knowledge graph metrics. Provides a shareable snapshot of vault health, growth, and progress. Triggers on "/stats", "vault stats", "show metrics", "how big is my vault".
-version: "1.0"
-generated_from: "arscontexta-v1.6"
-user-invocable: true
-context: fork
-model: sonnet
-allowed-tools: Read, Grep, Glob, Bash
-argument-hint: "[--share] — optional flag for compact shareable output"
+metadata:
+  version: "1.0"
+  generated_from: "arscontexta-v1.6"
+  argument-hint: "[--share] — optional flag for compact shareable output"
 ---
 ## Vault Path Resolution (mnemos)
 
 Before any file operations, resolve the vault root:
-1. Read `.mnemos.yaml` from the workspace root (the directory containing `.claude/`)
+1. Read `.mnemos.yaml` from the workspace root (the project directory where you are running)
 2. Extract `vault_path` — this is the root for ALL vault operations
 3. All paths in this skill (notes/, ops/, inbox/, self/, memory/, templates/) are RELATIVE to vault_path
 4. If `.mnemos.yaml` does not exist or vault_path is not set, fall back to the current working directory

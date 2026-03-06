@@ -1,18 +1,15 @@
 ---
 name: pipeline
 description: End-to-end source processing -- seed, reduce, process all claims through reflect/reweave/verify, archive. The full pipeline in one command. Triggers on "/pipeline", "/pipeline [file]", "process this end to end", "full pipeline".
-version: "1.0"
-generated_from: "arscontexta-v1.6"
-user-invocable: true
-context: fork
-model: sonnet
-allowed-tools: Read, Write, Edit, Grep, Glob, Bash, Task
-argument-hint: "[file] — path to source file to process end-to-end"
+metadata:
+  version: "1.0"
+  generated_from: "arscontexta-v1.6"
+  argument-hint: "[file] — path to source file to process end-to-end"
 ---
 ## Vault Path Resolution (mnemos)
 
 Before any file operations, resolve the vault root:
-1. Read `.mnemos.yaml` from the workspace root (the directory containing `.claude/`)
+1. Read `.mnemos.yaml` from the workspace root (the project directory where you are running)
 2. Extract `vault_path` — this is the root for ALL vault operations
 3. All paths in this skill (notes/, ops/, inbox/, self/, memory/, templates/) are RELATIVE to vault_path
 4. If `.mnemos.yaml` does not exist or vault_path is not set, fall back to the current working directory
