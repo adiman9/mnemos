@@ -120,11 +120,27 @@ mnemos uses a single taxonomy across both layers. The type determines the promot
 - `memory/sessions/`: archived transcripts/session summaries
 - `memory/MEMORY.md`: compact boot summary injected at session start
 
-### Lifecycle Hooks
-- **Session start**: inject `memory/MEMORY.md`
-- **During work**: append observations with near-zero overhead
-- **Heartbeat**: optional periodic capture for long sessions
-- **Session end**: transcript archive + compression to observations
+### Transcript Capture Pipeline
+
+Observations are extracted from recorded session transcripts, not agent self-summarization:
+
+1. **Capture** — Adapter hooks record the session incrementally to `memory/sessions/{session-id}.jsonl`
+   - Claude Code/Cursor: `session-capture.sh` fires on every assistant turn (`Stop` hook)
+   - OpenCode: `chat.message` and `tool.execute.after` plugin hooks capture per-turn
+   - OpenClaw: `gateway:heartbeat` captures periodically (~60s)
+   - All adapters include a pre-compaction hook for safety flush
+2. **Observe** — `/observe` reads transcripts incrementally (cursor-based), extracts typed observations via LLM analysis, routes to `memory/daily/YYYY-MM-DD.md`
+3. **Consolidate** — `/consolidate` promotes observations to L2 via dual-path (reference auto-promote, pipeline threshold-based)
+
+Transcripts use a standard JSONL format across all harnesses:
+```jsonl
+{"ts":"ISO8601","role":"user|assistant|tool_use|tool_result|compaction_boundary","content":"...","session_id":"..."}
+```
+
+### Session Storage
+- `memory/sessions/{session-id}.jsonl`: incremental standard transcript
+- `memory/sessions/{session-id}.meta.json`: session metadata (harness, start time)
+- `memory/sessions/.cursors.json`: byte-offset tracking for capture and observation
 
 ---
 
@@ -510,7 +526,7 @@ Read `self/identity.md`, `self/methodology.md`, and `self/goals.md` at session s
 Some skills run automatically on a schedule via OS-level triggers (launchd, systemd, crontab). This is configured in `ops/schedule.yaml` and managed by `schedule.sh`.
 
 ### Default Schedule
-- **Daily** (09:00): `/consolidate`, `/dream --daily`, `/curiosity`, `/stats`
+- **Daily** (09:00): `/observe`, `/consolidate`, `/dream --daily`, `/curiosity`, `/stats`
 - **Weekly** (Sun 03:00): `/dream --weekly`, `/graph health`, `/validate all`, `/rethink`
 
 ### What This Means for You

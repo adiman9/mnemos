@@ -10,7 +10,8 @@ Codex CLI exposes only the `after_agent` (turn complete) lifecycle event to exte
 |-------------|------------------|--------|
 | SessionStart | None | **Not supported** — AGENTS.md provides static context instead |
 | PostToolUse (Write) | None | **Not supported** — no per-file-write hook |
-| Stop | `notify` (after_agent) | Partial — fires after each turn, not just session end |
+| Transcript capture | `notify` (after_agent) | Partial — fires per turn, reads `rollouts/*.jsonl` |
+| Pre-compact | None | **Not supported** |
 | Auto-commit | `notify` (after_agent) | Partial — commits after turns, not individual writes |
 
 ## What Works
@@ -39,6 +40,10 @@ Add to `~/.codex/config.toml`:
 ```toml
 notify = ["/path/to/workspace/.mnemos/hooks/scripts/codex-notify.sh"]
 ```
+
+## Transcript Capture
+
+Codex writes session rollouts to `rollouts/*.jsonl`. The `notify` hook can invoke `session-capture.sh` to incrementally convert these to mnemos standard JSONL format in `memory/sessions/`. Without a pre-compaction hook, some transcript data may be lost during context resets.
 
 ## Limitations
 

@@ -63,12 +63,12 @@ OpenClaw has built-in scheduling via `openclaw cron`. **Do not use `schedule.sh`
 OpenClaw's scheduler runs in the Gateway process and persists jobs to `~/.openclaw/cron/jobs.json`. Jobs can run in isolated sessions (recommended for background maintenance) or inject into the main chat.
 
 ```bash
-# Daily: consolidation, context-driven dreams, research, stats (9 AM)
+# Daily: observation extraction, consolidation, context-driven dreams, research, stats (9 AM)
 openclaw cron add \
   --name "mnemos-daily" \
   --cron "0 9 * * *" \
   --session isolated \
-  --message "/consolidate && /dream --daily && /curiosity && /stats"
+  --message "/observe && /consolidate && /dream --daily && /curiosity && /stats"
 
 # Weekly: deep dreams, graph health, validation (Sunday 3 AM)
 openclaw cron add \
@@ -99,10 +99,16 @@ OpenClaw's hook system supports all mnemos lifecycle events:
 |-------------|---------------|--------|
 | SessionStart | `session_start` | Full |
 | PostToolUse (Write) | `after_tool_call` (tool_filter: write) | Full |
-| Stop | `agent_end` | Full |
+| Transcript capture | `gateway:heartbeat` (periodic) | Full |
+| Pre-compact | `compaction:memoryFlush` | Full |
+| Session end | `agent_end` | Full |
 | Auto-commit | `after_tool_call` (async) | Full |
 
-If you need hooks (for auto-commit on note writes, session capture, etc.), configure them in OpenClaw's hook system pointing to the scripts in `mnemos/core/hooks/scripts/`.
+### Passive Observation Pipeline
+
+OpenClaw captures transcripts incrementally via the `gateway:heartbeat` hook (fires ~every 60s). The `compaction:memoryFlush` hook provides a safety net before context compaction. Session transcripts are stored in `{vault}/memory/sessions/{session-id}.jsonl` in standard mnemos JSONL format.
+
+The `/observe` skill then reads these transcripts to extract typed observations — this can run manually or via the daily `openclaw cron` schedule.
 
 ## Alternative: Legacy Workspace Install
 

@@ -10,11 +10,26 @@
       description: "Inject MEMORY.md and vault stats at session start"
     },
     {
-      name: "mnemos-session-capture",
+      name: "mnemos-transcript-capture",
+      event: "gateway:heartbeat",
+      type: "void",
+      async: true,
+      command: ".mnemos/hooks/scripts/session-capture.sh",
+      description: "Incremental transcript capture from session logs"
+    },
+    {
+      name: "mnemos-pre-compact",
+      event: "compaction:memoryFlush",
+      type: "void",
+      command: ".mnemos/hooks/scripts/pre-compact.sh",
+      description: "Emergency transcript flush before context compaction"
+    },
+    {
+      name: "mnemos-session-end",
       event: "agent_end",
       type: "void",
       command: ".mnemos/hooks/scripts/session-capture.sh",
-      description: "Archive session transcript at session end"
+      description: "Final transcript capture at session end"
     },
     {
       name: "mnemos-validate-note",

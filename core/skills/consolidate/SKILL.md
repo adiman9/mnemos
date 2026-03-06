@@ -28,7 +28,7 @@ Parse arguments:
 - --days N: scan the last N days of observations (default: 7)
 - --dry-run: show what would be promoted without creating any files
 
-You are the consolidation bridge between working memory (Layer 1) and long-term knowledge (Layer 2). Route observations through a dual-path promotion model with a unified taxonomy.
+You are the consolidation bridge between working memory (Layer 1) and long-term knowledge (Layer 2). Route observations through a **tri-path promotion model** with a unified taxonomy.
 
 ### Step 1: Scan Daily Logs
 
@@ -51,14 +51,17 @@ Also compute frequency by searching across ALL daily logs (not just the scanned 
 
 ### Step 2: Classify by Promotion Path
 
-Split observations into two promotion groups using unified taxonomy:
+Split observations into three promotion groups using unified taxonomy:
 
-| Path | Types | Rule |
-|------|-------|------|
-| Reference | person, tool, decision, open-question | AUTO-promote all (no threshold) |
-| Full pipeline | insight, pattern, workflow | Promote only if importance >= 0.8 OR surprise >= 0.7 OR (frequency >= 2 AND importance >= 0.4) |
+| Path | Types | Destination | Rule |
+|------|-------|-------------|------|
+| Identity | preference | `self/identity.md` | AUTO-promote all (no threshold) |
+| Reference | person, tool, decision, open-question | `notes/` | AUTO-promote all (no threshold) |
+| Full pipeline | insight, pattern, workflow | `inbox/` → pipeline | Promote only if importance >= 0.8 OR surprise >= 0.7 OR (frequency >= 2 AND importance >= 0.4) |
 
 Track which criterion promoted each full-pipeline observation (importance, surprise, or frequency+importance) for reporting.
+
+**Why three paths**: Identity observations (preferences) define how the agent should behave — they're not knowledge about the world, they're configuration about the relationship. They belong in `self/`, not `notes/`.
 
 ### Step 3: Deduplicate Against Existing Notes (Both Paths)
 
@@ -74,7 +77,33 @@ Dedup outcomes:
 - If already captured but new information exists: mark for UPDATE in Step 5 (reference path enrichment)
 - If no match: eligible for create (Step 4A or Step 4B)
 
-### Step 4A: Reference Path - Create Notes Directly
+### Step 4A: Identity Path - Append to self/identity.md
+
+If --dry-run: list what would be appended and do not write files.
+
+Otherwise, for each identity observation (preference):
+
+1. Read current `{vault_path}/self/identity.md`
+
+2. Determine the appropriate section:
+   - Agent name/persona → append under `## Core Identity`
+   - Interaction style, communication preferences → append under `## Working Preferences`
+   - If no matching section exists, append under `## Working Preferences`
+
+3. Append the preference as a bullet point with source attribution:
+   ```markdown
+   - [preference content] *(from daily/YYYY-MM-DD)*
+   ```
+
+4. Deduplicate: If an equivalent preference already exists in identity.md, either:
+   - SKIP if identical
+   - UPDATE if the new version adds meaningful detail (replace old entry)
+
+5. **No wiki-linking**: Identity observations are not part of the knowledge graph. They define the agent, not knowledge about the world.
+
+**Immediate MEMORY.md update**: After appending preferences, ALWAYS update `{vault_path}/memory/MEMORY.md` to include them in the boot context, regardless of importance scores. Preferences have high "stickiness" for session continuity.
+
+### Step 4B: Reference Path - Create Notes Directly
 
 If --dry-run: list what would be created/updated/linked and do not write files.
 
@@ -122,7 +151,7 @@ Otherwise, for each dedup-passed reference observation (person/tool/decision/ope
    - After creating reference notes, recommend running `/reflect` on each new note
    - If pipeline chaining mode is `suggested` or `automatic`, add reflect tasks to queue entries for these notes
 
-### Step 4B: Full Pipeline Path - Route Through Inbox
+### Step 4C: Full Pipeline Path - Route Through Inbox
 
 This path remains threshold-based and uses the existing pipeline behavior.
 
@@ -153,7 +182,7 @@ Otherwise, for each full-pipeline observation (insight/pattern/workflow) that pa
 
 2. Queue via `/seed` (or explicitly mark ready for `/pipeline`/`/ralph`)
 
-### Step 5: Update Existing Notes (Reference Enrichment)
+### Step 5: Update Existing Content (Reference & Identity Enrichment)
 
 For reference-path dedup matches with new information:
 - Read the existing note
@@ -162,6 +191,11 @@ For reference-path dedup matches with new information:
   - `- consolidated from daily/YYYY-MM-DD -- [what was added]`
 - Preserve existing structure and links while enriching content
 
+For identity-path dedup matches with new information:
+- Read `self/identity.md`
+- Update the existing preference entry with additional detail
+- Preserve source attribution from original entry, add new source
+
 ### Step 6: Report
 
 ```
@@ -169,6 +203,10 @@ Consolidation Report
 ====================
 Period scanned: YYYY-MM-DD to YYYY-MM-DD
 Observations found: N
+
+Identity path (auto-promoted to self/identity.md):
+  - preference: X appended, Y updated, Z skipped (already exists)
+  MEMORY.md updated: yes/no
 
 Reference path (auto-promoted to notes/):
   - person: X created, Y updated, Z skipped (already exists)
@@ -183,10 +221,11 @@ Full pipeline path (threshold-based -> inbox/):
   - workflow: X promoted
   Skipped (below threshold): N
 
-Deduplicated (already in notes/): D
+Deduplicated (already in notes/ or self/): D
 Updated with new info: U
 
-Files created:
+Files modified:
+  self/identity.md: [list preferences appended]
   notes/: [list of reference notes created]
   inbox/: [list of pipeline items created]
 
@@ -198,10 +237,13 @@ Next:
 ### Step 7: Regenerate MEMORY.md
 
 After consolidation, regenerate `{vault_path}/memory/MEMORY.md` to reflect the current state:
+- Read `{vault_path}/self/identity.md` for agent persona and preferences (CRITICAL for session continuity)
 - Read `{vault_path}/self/goals.md` for current objectives
 - Summarize recent observations (last 3 days)
 - List active topic maps from `{vault_path}/notes/`
 - Summarize last 3-5 session summaries from `{vault_path}/memory/sessions/`
+
+**Identity section in MEMORY.md**: If `self/identity.md` contains a defined persona or working preferences, include a brief "## Identity" section at the top of MEMORY.md so the agent knows who it is immediately at session start.
 
 ---
 

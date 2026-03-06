@@ -12,7 +12,8 @@ Amp uses a "Toolbox" system — shell scripts in an `AMP_TOOLBOX` directory that
 |-------------|----------------|--------|
 | SessionStart | Toolbox `describe` at startup | Partial |
 | PostToolUse (Write) | Subagent / Toolbox | Possible but indirect |
-| Stop | None documented | Not supported |
+| Transcript capture | `post-turn` Toolbox | Planned — reads `~/.amp/sessions/` |
+| Pre-compact | None | Not supported |
 | Auto-commit | Toolbox | Possible |
 
 ## What Works

@@ -6,6 +6,7 @@
 daily:
   time: "09:00"  # Local time (24h format). Actual execution depends on scheduler.
   skills:
+    - /observe           # L1: extract observations from session transcripts
     - /consolidate       # L1→L2: promote high-value observations to knowledge pipeline
     - /dream --daily     # L3: context-driven connections from today's activity
     - /curiosity         # Research discovery: generate and execute high-EIG research queries

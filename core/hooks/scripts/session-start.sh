@@ -28,11 +28,11 @@ echo ""
 
 # --- Vault Stats ---
 echo "--- Vault ---"
-NOTES_COUNT=$(find "$VAULT_PATH/notes" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')
-INBOX_COUNT=$(find "$VAULT_PATH/inbox" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')
-DAILY_COUNT=$(find "$VAULT_PATH/memory/daily" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')
-DREAMS_COUNT=$(find "$VAULT_PATH/memory/.dreams" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')
-OBS_COUNT=$(find "$VAULT_PATH/ops/observations" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')
+NOTES_COUNT=$( (find "$VAULT_PATH/notes" -name '*.md' 2>/dev/null || true) | wc -l | tr -d ' ')
+INBOX_COUNT=$( (find "$VAULT_PATH/inbox" -name '*.md' 2>/dev/null || true) | wc -l | tr -d ' ')
+DAILY_COUNT=$( (find "$VAULT_PATH/memory/daily" -name '*.md' 2>/dev/null || true) | wc -l | tr -d ' ')
+DREAMS_COUNT=$( (find "$VAULT_PATH/memory/.dreams" -name '*.md' 2>/dev/null || true) | wc -l | tr -d ' ')
+OBS_COUNT=$( (find "$VAULT_PATH/ops/observations" -name '*.md' 2>/dev/null || true) | wc -l | tr -d ' ')
 echo "Notes: $NOTES_COUNT | Inbox: $INBOX_COUNT | Daily logs: $DAILY_COUNT | Dreams: $DREAMS_COUNT | Observations: $OBS_COUNT"
 echo ""
 
@@ -55,7 +55,7 @@ if [ "$OBS_COUNT" -gt 10 ] 2>/dev/null; then
     ALERTS="${ALERTS}  - Observation accumulation: ${OBS_COUNT} pending (threshold: 10). Run /rethink.\n"
 fi
 
-TENSION_COUNT=$(find "$VAULT_PATH/ops/tensions" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')
+TENSION_COUNT=$( (find "$VAULT_PATH/ops/tensions" -name '*.md' 2>/dev/null || true) | wc -l | tr -d ' ')
 if [ "$TENSION_COUNT" -gt 5 ] 2>/dev/null; then
     ALERTS="${ALERTS}  - Tension accumulation: ${TENSION_COUNT} pending (threshold: 5). Run /rethink.\n"
 fi
@@ -63,7 +63,7 @@ fi
 # Check for stale inbox items (older than 3 days)
 if [ "$INBOX_COUNT" -gt 0 ] 2>/dev/null; then
     if command -v find >/dev/null 2>&1; then
-        STALE_INBOX=$(find "$VAULT_PATH/inbox" -name '*.md' -mtime +3 2>/dev/null | wc -l | tr -d ' ')
+        STALE_INBOX=$( (find "$VAULT_PATH/inbox" -name '*.md' -mtime +3 2>/dev/null || true) | wc -l | tr -d ' ')
         if [ "$STALE_INBOX" -gt 0 ] 2>/dev/null; then
             ALERTS="${ALERTS}  - Stale inbox: ${STALE_INBOX} items older than 3 days. Prioritize processing.\n"
         fi
@@ -88,7 +88,7 @@ if [ -d "$VAULT_PATH/memory/daily" ]; then
         DAY_FILE="$VAULT_PATH/memory/daily/${DAY}.md"
         if [ -f "$DAY_FILE" ]; then
             # Extract high-importance observations (i>=0.7)
-            HIGH=$(grep -E '\|i=(0\.[7-9]|1\.0)' "$DAY_FILE" 2>/dev/null | head -5)
+            HIGH=$(grep -E '\|i=(0\.[7-9]|1\.0)' "$DAY_FILE" 2>/dev/null | head -5 || true)
             if [ -n "$HIGH" ]; then
                 RECENT="${RECENT}${DAY}:\n${HIGH}\n"
             fi
@@ -102,7 +102,7 @@ fi
 
 # --- Reminders ---
 if [ -f "$VAULT_PATH/ops/reminders.md" ]; then
-    OVERDUE=$(grep -E '^\- \[ \]' "$VAULT_PATH/ops/reminders.md" 2>/dev/null | head -5)
+    OVERDUE=$(grep -E '^\- \[ \]' "$VAULT_PATH/ops/reminders.md" 2>/dev/null | head -5 || true)
     if [ -n "$OVERDUE" ]; then
         echo "--- Reminders ---"
         echo "$OVERDUE"
@@ -110,19 +110,9 @@ if [ -f "$VAULT_PATH/ops/reminders.md" ]; then
     fi
 fi
 
-# --- Initialize session tracking ---
+# --- Ensure session directories exist ---
 mkdir -p "$VAULT_PATH/memory/sessions"
-cat > "$VAULT_PATH/memory/sessions/current.json" << EOF
-{
-  "session_id": "$SESSION_ID",
-  "start_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "vault_path": "$VAULT_PATH",
-  "notes_created": [],
-  "notes_modified": [],
-  "observations": [],
-  "last_activity": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-}
-EOF
+mkdir -p "$VAULT_PATH/memory/daily"
 
 echo "--- Ready ---"
 echo "Read self/goals.md and self/identity.md to orient."

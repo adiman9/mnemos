@@ -66,11 +66,39 @@ mnemos organizes memory into three distinct layers of varying curation and stabi
 
 Working memory handles the immediate influx of information from active sessions. It prioritizes recall and context over long-term durability.
 
-### Session Hooks
-- **Session-Start**: Injects `MEMORY.md` into the agent's context to provide immediate orientation (current goals, recent observations).
-- **Work**: During the session, the agent can manually trigger `/remember` to capture specific insights.
-- **Heartbeat**: Periodically captures state and progress markers.
-- **Session-Capture**: At session end, the full transcript is archived to `memory/sessions/`. An LLM-based compression step produces typed observations from the session logs.
+### Transcript Capture
+
+Observations are derived from recorded transcripts, not real-time agent introspection. This passive approach survives context compaction and captures cross-session patterns.
+
+```text
+Adapter Hook (per-turn)           /observe (batch)              /consolidate
+         |                              |                            |
+         v                              v                            v
+Native transcript ──> session-capture.sh ──> memory/sessions/*.jsonl ──> /observe ──> memory/daily/ ──> /consolidate ──> notes/
+         |                                       ^                        |
+         |                                       |                        |
+Pre-compact hook ──> pre-compact.sh ─────────────┘                  Typed observations
+(safety flush before compaction)                                    with scores + co-tags
+```
+
+**Per-harness capture mechanisms:**
+
+| Harness | Capture Hook | Pre-Compact | Transcript Source |
+|---------|-------------|-------------|-------------------|
+| Claude Code / Cursor | `Stop` (every turn) | `PreCompact` | `transcript_path` in stdin |
+| OpenCode | `chat.message` + `tool.execute.after` | `experimental.session.compacting` | Native plugin API |
+| OpenClaw | `gateway:heartbeat` (periodic) | `compaction:memoryFlush` | `.jsonl` on disk |
+| Codex | `after_tool_use` | — | `rollouts/*.jsonl` |
+| Amp | `post-turn` | — | `~/.amp/sessions/` |
+
+All adapters produce the same standard JSONL format in `memory/sessions/`:
+```jsonl
+{"ts":"ISO8601","role":"user|assistant|tool_use|tool_result|compaction_boundary","content":"...","session_id":"..."}
+```
+
+Cursor tracking (`memory/sessions/.cursors.json`) enables incremental processing:
+- `offset`: how far the capture hook has written
+- `observed_offset`: how far `/observe` has processed
 
 ### Typed Observations
 Observations are the atomic units of working memory, stored in `memory/daily/YYYY-MM-DD.md`. Each observation contains:
@@ -326,6 +354,7 @@ scheduled-run.sh --daily --vault <path>
 daily:
   time: "09:00"
   skills:
+    - /observe           # L1: extract observations from transcripts
     - /consolidate       # L1→L2 promotion
     - /dream --daily     # L3 context-driven connections
     - /curiosity         # Proactive research discovery

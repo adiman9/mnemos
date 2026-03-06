@@ -93,7 +93,7 @@ mnemos/
 
 ## Layers
 
-**Layer 1 — Working Memory** (`memory/`): Session hooks compress interactions into typed observations with importance, confidence, and surprise scores. MEMORY.md provides boot context at session start.
+**Layer 1 — Working Memory** (`memory/`): Adapter hooks capture session transcripts incrementally to `memory/sessions/`. The `/observe` skill reads these transcripts and extracts typed observations with importance, confidence, and surprise scores. MEMORY.md provides boot context at session start.
 
 **Layer 2 — Long-Term Knowledge** (`notes/`): Atomic prose-titled insights connected by wiki-links. Processing pipeline: `/seed` → `/reduce` → `/reflect` → `/reweave` → `/verify`. Orchestrated by `/ralph` with fresh context per phase.
 
@@ -105,7 +105,7 @@ mnemos/
 
 | Skill | Layer | Purpose |
 |-------|-------|---------|
-| `/observe` | L1 | Compress session into typed observations |
+| `/observe` | L1 | Extract typed observations from session transcripts (passive log reader) |
 | `/consolidate` | L1→L2 | Dual-path promotion: reference types auto-promote, pipeline types use thresholds |
 | `/seed` | L2 | Queue source material for processing |
 | `/reduce` | L2 | Extract atomic insights from sources |
@@ -154,14 +154,15 @@ mnemos separates **what** happens from **how** it's triggered:
 - **Core** contains all logic: skill prompts (SKILL.md), hook scripts (bash), templates, and the system prompt. These are harness-agnostic.
 - **Adapters** wire core logic into each harness's extension system. An adapter is typically a single config file or small plugin.
 
-To add support for a new harness, create an adapter that maps these 4 lifecycle events to the harness's extension mechanism:
+To add support for a new harness, create an adapter that maps these lifecycle events to the harness's extension mechanism:
 
 | Event | Purpose | Script |
 |-------|---------|--------|
 | Session start | Inject boot context | `session-start.sh` |
+| Per-turn capture | Record transcript incrementally | `session-capture.sh` |
+| Pre-compaction | Safety flush before context compaction | `pre-compact.sh` |
 | File write (sync) | Validate note schema | `validate-note.sh` |
 | File write (async) | Auto-commit to git | `auto-commit.sh` |
-| Session end | Archive transcript | `session-capture.sh` |
 
 See `adapters/*/README.md` for per-harness details.
 
@@ -217,7 +218,7 @@ Configured in `<vault>/ops/schedule.yaml`:
 
 | Frequency | Default Time | Skills |
 |-----------|-------------|--------|
-| Daily | 09:00 | `/consolidate`, `/dream --daily`, `/curiosity`, `/stats` |
+| Daily | 09:00 | `/observe`, `/consolidate`, `/dream --daily`, `/curiosity`, `/stats` |
 | Weekly | Sun 03:00 | `/dream --weekly`, `/graph health`, `/validate all`, `/rethink` |
 
 Edit `ops/schedule.yaml` in your vault to customize skills and times.

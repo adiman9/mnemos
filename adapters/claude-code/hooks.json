@@ -7,11 +7,19 @@
     "timeout": 10000
   },
   {
-    "name": "mnemos-session-capture",
-    "description": "Capture session observations and archive transcript at session end",
+    "name": "mnemos-transcript-capture",
+    "description": "Incrementally capture session transcript to vault (fires every turn)",
     "event": "Stop",
     "script": "hooks/scripts/session-capture.sh",
-    "timeout": 15000
+    "timeout": 3000,
+    "async": true
+  },
+  {
+    "name": "mnemos-pre-compact",
+    "description": "Emergency transcript flush before context compaction",
+    "event": "PreCompact",
+    "script": "hooks/scripts/pre-compact.sh",
+    "timeout": 5000
   },
   {
     "name": "mnemos-validate-note",

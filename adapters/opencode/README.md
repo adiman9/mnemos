@@ -16,7 +16,9 @@ Adapter for [OpenCode](https://github.com/sst/opencode) via its TypeScript plugi
 |-------------|---------------|--------|
 | SessionStart | `experimental.chat.system.transform` | Full |
 | PostToolUse (Write) | `tool.execute.after` | Full |
-| Stop | `experimental.session.compacting` | Partial (triggers on compaction, not session end) |
+| Session capture | `chat.message` | Full (per-turn incremental) |
+| Tool capture | `tool.execute.after` | Full (alongside validation) |
+| Pre-compact | `experimental.session.compacting` | Full (flush + boundary marker) |
 | Auto-commit | `tool.execute.after` (async) | Full |
 
 ## Install

@@ -32,6 +32,7 @@ META_FILE="$SESSIONS_DIR/${SESSION_ID}.meta.json"
 
 mkdir -p "$SESSIONS_DIR"
 [ -f "$CURSOR_FILE" ] || printf '{}\n' > "$CURSOR_FILE"
+[ -f "$OUTPUT_FILE" ] || : > "$OUTPUT_FILE"
 
 iso_now() {
     date -u +%Y-%m-%dT%H:%M:%SZ
@@ -102,20 +103,6 @@ truncate_content() {
     fi
 }
 
-current_offset() {
-    local sid="$1"
-    local raw
-    raw=$(tr -d '\n' < "$CURSOR_FILE" 2>/dev/null || printf '{}')
-    printf '%s' "$raw" | grep -o '"'"$sid"'":{[^}]*}' | grep -o '"offset":[0-9][0-9]*' | head -n1 | sed 's/"offset"://'
-}
-
-current_observed_offset() {
-    local sid="$1"
-    local raw
-    raw=$(tr -d '\n' < "$CURSOR_FILE" 2>/dev/null || printf '{}')
-    printf '%s' "$raw" | grep -o '"'"$sid"'":{[^}]*}' | grep -o '"observed_offset":[0-9][0-9]*' | head -n1 | sed 's/"observed_offset"://'
-}
-
 write_cursor() {
     local sid="$1"
     local new_offset="$2"
@@ -123,18 +110,9 @@ write_cursor() {
     local raw
     raw=$(tr -d '\n' < "$CURSOR_FILE" 2>/dev/null || printf '{}')
 
-    # Preserve observed_offset if it exists
-    local obs_offset
-    obs_offset=$(current_observed_offset "$sid")
-
     local new_entry
-    if [ -n "$obs_offset" ]; then
-        new_entry="\"$sid\":{\"offset\":$new_offset,\"observed_offset\":$obs_offset,\"last_capture\":\"$now\"}"
-    else
-        new_entry="\"$sid\":{\"offset\":$new_offset,\"last_capture\":\"$now\"}"
-    fi
+    new_entry="\"$sid\":{\"offset\":$new_offset,\"observed_offset\":0,\"last_capture\":\"$now\"}"
 
-    # Extract all session entries from the cursor file
     local entries
     entries=$(printf '%s' "$raw" | grep -o '"[^"]*":{[^}]*}' || true)
 
@@ -202,31 +180,41 @@ if [ ! -f "$META_FILE" ]; then
         "$SESSION_ID" "$START_TIME" "$(json_escape "$VAULT_PATH")" > "$META_FILE"
 fi
 
-offset=$(current_offset "$SESSION_ID")
-[ -n "$offset" ] || offset=0
-
-native_size=$(wc -c < "$TRANSCRIPT_PATH" | tr -d ' ')
-if [ "$offset" -gt "$native_size" ] 2>/dev/null; then
-    offset=0
-fi
-
+tmp_all=$(mktemp)
 tmp_new=$(mktemp)
+tmp_existing_norm=$(mktemp)
 cleanup() {
-    rm -f "$tmp_new"
+    rm -f "$tmp_all" "$tmp_new" "$tmp_existing_norm"
 }
 trap cleanup EXIT
 
-start_byte=$((offset + 1))
-tail -c +"$start_byte" "$TRANSCRIPT_PATH" > "$tmp_new" 2>/dev/null || true
-
-if [ -s "$tmp_new" ]; then
-    while IFS= read -r line || [ -n "$line" ]; do
-        mapped=$(map_line "$line") || true
-        [ -n "${mapped:-}" ] && printf '%s\n' "$mapped" >> "$OUTPUT_FILE"
-    done < "$tmp_new"
+cat "$TRANSCRIPT_PATH" > "$tmp_all"
+if [ -s "$OUTPUT_FILE" ]; then
+    sed -E 's/"ts":"[^"]*",//' "$OUTPUT_FILE" > "$tmp_existing_norm" || : > "$tmp_existing_norm"
+else
+    : > "$tmp_existing_norm"
 fi
 
-capture_time=$(iso_now)
-write_cursor "$SESSION_ID" "$native_size" "$capture_time"
+if [ -s "$tmp_all" ]; then
+    while IFS= read -r line || [ -n "$line" ]; do
+        mapped=$(map_line "$line") || true
+        [ -n "${mapped:-}" ] || continue
+        mapped_norm=$(printf '%s' "$mapped" | sed -E 's/"ts":"[^"]*",//')
+        if ! grep -Fqx "$mapped_norm" "$tmp_existing_norm" 2>/dev/null; then
+            printf '%s\n' "$mapped" >> "$tmp_new"
+            printf '%s\n' "$mapped_norm" >> "$tmp_existing_norm"
+        fi
+    done < "$tmp_all"
+fi
+
+if [ -s "$tmp_new" ]; then
+    cat "$tmp_new" >> "$OUTPUT_FILE"
+fi
+
+boundary_ts=$(iso_now)
+printf '{"ts":"%s","role":"compaction_boundary","content":"Context compacted by harness","session_id":"%s"}\n' \
+    "$boundary_ts" "$SESSION_ID" >> "$OUTPUT_FILE"
+
+write_cursor "$SESSION_ID" 0 "$boundary_ts"
 
 exit 0
