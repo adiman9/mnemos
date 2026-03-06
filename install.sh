@@ -306,8 +306,8 @@ OEOF
 
     echo "Installing system prompt..."
     cp "$SCRIPT_DIR/core/SYSTEM.md" "$WORKSPACE/AGENTS.md"
-    # OpenCode also reads CLAUDE.md
-    cp "$SCRIPT_DIR/core/SYSTEM.md" "$WORKSPACE/CLAUDE.md"
+    # OpenCode also reads CLAUDE.md — symlink to avoid duplication
+    ln -sf AGENTS.md "$WORKSPACE/CLAUDE.md"
 }
 
 # =============================================================================
@@ -413,7 +413,8 @@ install_pi() {
 
     echo "Installing system prompt..."
     cp "$SCRIPT_DIR/core/SYSTEM.md" "$WORKSPACE/AGENTS.md"
-    cp "$SCRIPT_DIR/core/SYSTEM.md" "$WORKSPACE/CLAUDE.md"
+    # Pi also reads CLAUDE.md — symlink to avoid duplication
+    ln -sf AGENTS.md "$WORKSPACE/CLAUDE.md"
 }
 
 # =============================================================================
