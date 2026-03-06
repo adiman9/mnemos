@@ -1,0 +1,33 @@
+[
+  {
+    "name": "mnemos-session-start",
+    "description": "Inject MEMORY.md and recent observations at session start",
+    "event": "SessionStart",
+    "script": "hooks/scripts/session-start.sh",
+    "timeout": 10000
+  },
+  {
+    "name": "mnemos-session-capture",
+    "description": "Capture session observations and archive transcript at session end",
+    "event": "Stop",
+    "script": "hooks/scripts/session-capture.sh",
+    "timeout": 15000
+  },
+  {
+    "name": "mnemos-validate-note",
+    "description": "Schema enforcement on note writes",
+    "event": "PostToolUse",
+    "tool": "Write",
+    "script": "hooks/scripts/validate-note.sh",
+    "timeout": 5000
+  },
+  {
+    "name": "mnemos-auto-commit",
+    "description": "Non-blocking git auto-commit on vault changes",
+    "event": "PostToolUse",
+    "tool": "Write",
+    "script": "hooks/scripts/auto-commit.sh",
+    "timeout": 5000,
+    "async": true
+  }
+]

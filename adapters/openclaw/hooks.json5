@@ -1,0 +1,37 @@
+// mnemos hooks for OpenClaw
+// Registered via openclaw.hooks field in package.json
+{
+  hooks: [
+    {
+      name: "mnemos-session-start",
+      event: "session_start",
+      type: "void",
+      command: ".mnemos/hooks/scripts/session-start.sh",
+      description: "Inject MEMORY.md and vault stats at session start"
+    },
+    {
+      name: "mnemos-session-capture",
+      event: "agent_end",
+      type: "void",
+      command: ".mnemos/hooks/scripts/session-capture.sh",
+      description: "Archive session transcript at session end"
+    },
+    {
+      name: "mnemos-validate-note",
+      event: "after_tool_call",
+      type: "void",
+      tool_filter: "write",
+      command: ".mnemos/hooks/scripts/validate-note.sh",
+      description: "Schema enforcement on note writes"
+    },
+    {
+      name: "mnemos-auto-commit",
+      event: "after_tool_call",
+      type: "void",
+      tool_filter: "write",
+      async: true,
+      command: ".mnemos/hooks/scripts/auto-commit.sh",
+      description: "Non-blocking git auto-commit on vault changes"
+    }
+  ]
+}

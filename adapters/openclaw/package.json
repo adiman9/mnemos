@@ -1,0 +1,12 @@
+{
+  "name": "@mnemos/openclaw-hooks",
+  "version": "0.1.0",
+  "description": "mnemos lifecycle hooks for OpenClaw",
+  "openclaw": {
+    "hooks": "hooks.json5"
+  },
+  "files": [
+    "hooks.json5",
+    "HOOK.md"
+  ]
+}

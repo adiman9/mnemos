@@ -1,0 +1,22 @@
+# mnemos scheduled skill execution
+# Edit to customize which skills run and when.
+# Used by scheduled-run.sh to determine what to execute.
+
+# Daily skills — run once per day
+daily:
+  time: "09:00"  # Local time (24h format). Actual execution depends on scheduler.
+  skills:
+    - /consolidate       # L1→L2: promote high-value observations to knowledge pipeline
+    - /dream --daily     # L3: context-driven connections from today's activity
+    - /curiosity         # Research discovery: generate and execute high-EIG research queries
+    - /stats             # Vault metrics snapshot
+
+# Weekly skills — run once per week
+weekly:
+  day: sunday       # Day of week
+  time: "03:00"     # Run during off-hours
+  skills:
+    - /dream --weekly    # L3: deep cross-domain speculative connections (random sampling)
+    - /graph health      # Graph structural analysis
+    - /validate all      # Schema compliance sweep
+    - /rethink           # Review accumulated observations and tensions
