@@ -278,10 +278,10 @@ install_claude_code() {
 
 install_opencode() {
     echo "Installing skills..."
-    mkdir -p "$WORKSPACE/.claude/skills"
+    mkdir -p "$WORKSPACE/.opencode/skills"
     for skill_dir in "$SCRIPT_DIR"/core/skills/*/; do
         skill_name=$(basename "$skill_dir")
-        target_dir="$WORKSPACE/.claude/skills/$skill_name"
+        target_dir="$WORKSPACE/.opencode/skills/$skill_name"
         mkdir -p "$target_dir"
         cp -r "$skill_dir"* "$target_dir/"
         echo "  + $skill_name"
@@ -316,10 +316,10 @@ OEOF
 
 install_openclaw() {
     echo "Installing skills..."
-    mkdir -p "$WORKSPACE/.claude/skills"
+    mkdir -p "$WORKSPACE/.openclaw/skills"
     for skill_dir in "$SCRIPT_DIR"/core/skills/*/; do
         skill_name=$(basename "$skill_dir")
-        target_dir="$WORKSPACE/.claude/skills/$skill_name"
+        target_dir="$WORKSPACE/.openclaw/skills/$skill_name"
         mkdir -p "$target_dir"
         cp -r "$skill_dir"* "$target_dir/"
         echo "  + $skill_name"
@@ -342,10 +342,10 @@ install_openclaw() {
 
 install_codex() {
     echo "Installing skills..."
-    mkdir -p "$WORKSPACE/skills"
+    mkdir -p "$WORKSPACE/.codex/skills"
     for skill_dir in "$SCRIPT_DIR"/core/skills/*/; do
         skill_name=$(basename "$skill_dir")
-        target_dir="$WORKSPACE/skills/$skill_name"
+        target_dir="$WORKSPACE/.codex/skills/$skill_name"
         mkdir -p "$target_dir"
         cp -r "$skill_dir"* "$target_dir/"
         echo "  + $skill_name"
@@ -396,10 +396,10 @@ install_amp() {
 
 install_pi() {
     echo "Installing skills..."
-    mkdir -p "$WORKSPACE/.claude/skills"
+    mkdir -p "$WORKSPACE/.pi/skills"
     for skill_dir in "$SCRIPT_DIR"/core/skills/*/; do
         skill_name=$(basename "$skill_dir")
-        target_dir="$WORKSPACE/.claude/skills/$skill_name"
+        target_dir="$WORKSPACE/.pi/skills/$skill_name"
         mkdir -p "$target_dir"
         cp -r "$skill_dir"* "$target_dir/"
         echo "  + $skill_name"
