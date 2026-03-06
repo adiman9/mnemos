@@ -16,6 +16,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ADAPTER=""
+VAULT_ONLY=0
 
 # --- Parse arguments ---
 while [[ $# -gt 0 ]]; do
@@ -24,16 +25,29 @@ while [[ $# -gt 0 ]]; do
             ADAPTER="$2"
             shift 2
             ;;
+        --vault-only)
+            VAULT_ONLY=1
+            shift
+            ;;
         --help|-h)
             echo "Usage: $0 [--adapter <name>] <workspace-path> <vault-path>"
+            echo "       $0 --vault-only <vault-path>"
             echo ""
-            echo "Adapters:"
+            echo "Modes:"
+            echo "  Standard:   ./install.sh <workspace-path> <vault-path>"
+            echo "  Vault-only: ./install.sh --vault-only <vault-path>"
+            echo ""
+            echo "Adapters (for standard mode):"
             echo "  claude-code  Claude Code, Cursor, Cline (default)"
             echo "  opencode     OpenCode (sst/opencode)"
             echo "  pi           Pi agent framework (badlogic/pi-mono)"
             echo "  openclaw     OpenClaw"
             echo "  codex        OpenAI Codex CLI"
             echo "  amp          Amp (Sourcegraph)"
+            echo ""
+            echo "Vault-only mode initializes the vault without workspace setup."
+            echo "Use this for agents like OpenClaw that manage their own directories."
+            echo "After vault-only install, configure your agent to point at the vault."
             echo ""
             echo "If --adapter is omitted, auto-detects from workspace contents."
             exit 0
@@ -44,17 +58,29 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [[ $# -lt 2 ]]; then
-    echo "Usage: $0 [--adapter <name>] <workspace-path> <vault-path>"
-    echo "Run with --help for details."
-    exit 1
-fi
-
-WORKSPACE="$(cd "$1" && pwd)"
-VAULT="$2"
-
-if [[ ! "$VAULT" = /* ]]; then
-    VAULT="$(pwd)/$VAULT"
+# --- Vault-only mode ---
+if [[ "$VAULT_ONLY" -eq 1 ]]; then
+    if [[ $# -lt 1 ]]; then
+        echo "Usage: $0 --vault-only <vault-path>"
+        exit 1
+    fi
+    VAULT="$1"
+    if [[ ! "$VAULT" = /* ]]; then
+        VAULT="$(pwd)/$VAULT"
+    fi
+    WORKSPACE=""
+else
+    if [[ $# -lt 2 ]]; then
+        echo "Usage: $0 [--adapter <name>] <workspace-path> <vault-path>"
+        echo "       $0 --vault-only <vault-path>"
+        echo "Run with --help for details."
+        exit 1
+    fi
+    WORKSPACE="$(cd "$1" && pwd)"
+    VAULT="$2"
+    if [[ ! "$VAULT" = /* ]]; then
+        VAULT="$(pwd)/$VAULT"
+    fi
 fi
 
 # --- Auto-detect adapter ---
@@ -74,16 +100,22 @@ detect_adapter() {
     fi
 }
 
-if [[ -z "$ADAPTER" ]]; then
-    ADAPTER=$(detect_adapter)
-    echo "Auto-detected adapter: $ADAPTER"
-fi
+if [[ "$VAULT_ONLY" -eq 1 ]]; then
+    echo "Installing mnemos (vault-only mode)"
+    echo "  Vault: $VAULT"
+    echo ""
+else
+    if [[ -z "$ADAPTER" ]]; then
+        ADAPTER=$(detect_adapter)
+        echo "Auto-detected adapter: $ADAPTER"
+    fi
 
-echo "Installing mnemos"
-echo "  Adapter:   $ADAPTER"
-echo "  Workspace: $WORKSPACE"
-echo "  Vault:     $VAULT"
-echo ""
+    echo "Installing mnemos"
+    echo "  Adapter:   $ADAPTER"
+    echo "  Workspace: $WORKSPACE"
+    echo "  Vault:     $VAULT"
+    echo ""
+fi
 
 # =============================================================================
 # Shared: vault initialization (all adapters)
@@ -389,6 +421,27 @@ install_pi() {
 # =============================================================================
 
 install_vault
+
+if [[ "$VAULT_ONLY" -eq 1 ]]; then
+    echo ""
+    echo "Done. Vault initialized successfully."
+    echo ""
+    echo "  Vault: $VAULT"
+    echo ""
+    echo "Usage:"
+    echo ""
+    echo "  Research companion (vault = workspace):"
+    echo "    cd $VAULT && claude"
+    echo "    # Hooks auto-detect vault from cwd. No config needed."
+    echo ""
+    echo "  OpenClaw / vault-only agents:"
+    echo "    1. Point your agent at the vault via its config or MNEMOS_VAULT env var"
+    echo "    2. Load mnemos skills via your agent's skill system"
+    echo "    3. Set up scheduling (see adapters/openclaw/README.md)"
+    echo ""
+    exit 0
+fi
+
 install_mnemos_yaml
 
 case "$ADAPTER" in

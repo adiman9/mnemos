@@ -175,17 +175,21 @@ if [[ -n "$ADAPTER" ]]; then
 fi
 
 install_openclaw_cron() {
-    if [[ "$UNINSTALL" -eq 1 ]]; then
-        openclaw cron remove || true
-        echo "Removed OpenClaw cron jobs"
-        return
-    fi
-
-    openclaw cron add --cron "0 9 * * *" --message "/consolidate && /stats"
-    openclaw cron add --cron "0 3 * * 0" --message "/dream && /graph health && /validate all && /rethink"
-    echo "Installed OpenClaw cron jobs"
-    echo "  Daily:   0 9 * * *"
-    echo "  Weekly:  0 3 * * 0"
+    echo ""
+    echo "OpenClaw has built-in scheduling. Do not use this script."
+    echo ""
+    echo "Instead, configure scheduling directly via openclaw cron:"
+    echo ""
+    echo "  # Daily maintenance (9 AM)"
+    echo "  openclaw cron add --name \"mnemos-daily\" --cron \"0 9 * * *\" --session isolated \\"
+    echo "    --message \"/consolidate && /dream --daily && /curiosity && /stats\""
+    echo ""
+    echo "  # Weekly maintenance (Sunday 3 AM)"
+    echo "  openclaw cron add --name \"mnemos-weekly\" --cron \"0 3 * * 0\" --session isolated \\"
+    echo "    --message \"/dream --weekly && /graph health && /validate all && /rethink\""
+    echo ""
+    echo "See adapters/openclaw/README.md for details."
+    exit 0
 }
 
 install_launchd() {
