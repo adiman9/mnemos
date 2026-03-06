@@ -243,12 +243,31 @@ Additional sources are invoked only for the highest-scoring candidates to contro
 
 `/curiosity` is an orchestrator. `/learn` is the executor. `/curiosity` generates research queries and scores them; `/learn` handles all search tool logic, provenance metadata, and inbox filing. This separation means `/curiosity` benefits from any improvement to `/learn`'s search cascade without modification.
 
-## Configurable Vault Path
+## Workspace vs Vault
 
-A critical constraint is that the agent workspace and the mnemos vault are often distinct.
-- **.mnemos.yaml**: Located in the agent's working directory, containing `vault_path`.
-- **Global Context**: Skills read the vault path from this config or receive it via an environment variable or argument.
-- **CLI Support**: All mnemos scripts must support a `--vault` argument to override defaults.
+mnemos separates two distinct locations:
+
+**Workspace** — The directory where the agent runs. For project-based agents (Claude Code, OpenCode, Cursor), this is the user's project directory. mnemos installs hooks, adapter files, and `.mnemos.yaml` here. The workspace is transient — you might work in many different project directories over time.
+
+**Vault** — The persistent knowledge store. Contains all memory (observations, notes, dreams), agent identity, and configuration. The vault is independent of any workspace. Multiple workspaces can point to the same vault, accumulating knowledge across projects.
+
+```
+workspace/                     vault/
+├── .claude/hooks/             ├── notes/         # Knowledge graph
+├── .mnemos.yaml → points to → ├── memory/        # Observations, sessions
+├── CLAUDE.md                  ├── self/          # Identity, goals
+└── (your code)                └── ops/           # Queue, logs, config
+```
+
+**Vault-only agents**: Some agents (OpenClaw, future cloud-native agents) don't expose a user-visible workspace. They manage their own internal directories. For these, mnemos provides a vault-only install that skips workspace setup entirely. The agent is configured to point at the vault through its native configuration system.
+
+### Path Resolution
+
+- **.mnemos.yaml**: Located in the workspace, containing `vault_path`. Created by `install.sh` during standard install.
+- **MNEMOS_VAULT**: Environment variable that skills and scripts check as fallback.
+- **--vault argument**: All mnemos scripts accept `--vault <path>` to override defaults.
+
+Skills resolve the vault path in order: explicit argument → environment variable → `.mnemos.yaml` in current directory.
 
 ## Vault Layout
 

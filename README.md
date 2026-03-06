@@ -4,7 +4,29 @@
 
 Working memory captures what happens. Long-term knowledge curates what matters. The dream layer finds connections nobody asked for.
 
+## Concepts
+
+**Workspace** — The directory where your agent runs. This is where you invoke the agent CLI (e.g., `claude`, `opencode`). For project-based tools like Claude Code or OpenCode, this is your project directory. mnemos installs hooks, skills, and adapter files here.
+
+**Vault** — The persistent knowledge store. Contains all memory (observations, notes, dreams), agent identity, and configuration. The vault is independent of any workspace — you can point multiple workspaces at the same vault to accumulate knowledge across projects.
+
+```
+workspace/                     vault/
+├── .claude/hooks/             ├── notes/         # Knowledge graph
+├── .mnemos.yaml → points to → ├── memory/        # Observations, sessions
+├── CLAUDE.md                  ├── self/          # Identity, goals
+└── (your code)                └── ops/           # Queue, logs, config
+```
+
+**Vault as workspace** — For research companions or personal knowledge management, the vault can BE the workspace. Run `claude` directly from the vault directory and hooks auto-detect it. No separate project needed.
+
+**Vault-only agents** — Some agents (like OpenClaw) don't have a traditional workspace. They manage their own internal directories. For these, mnemos provides a **vault-only** install that skips workspace setup entirely.
+
 ## Install
+
+### Standard Install (workspace + vault)
+
+For agents with a visible workspace (Claude Code, Cursor, OpenCode, etc.):
 
 ```bash
 # Auto-detect harness (defaults to claude-code):
@@ -12,8 +34,26 @@ Working memory captures what happens. Long-term knowledge curates what matters. 
 
 # Specify adapter explicitly:
 ./install.sh --adapter opencode <workspace-path> <vault-path>
-./install.sh --adapter openclaw <workspace-path> <vault-path>
 ```
+
+### Vault-Only Install
+
+For research companions or agents without a project workspace:
+
+```bash
+./install.sh --vault-only <vault-path>
+```
+
+**Research companion mode**: If you want to use mnemos purely for research/learning without a coding project, run the agent directly from the vault:
+
+```bash
+./install.sh --vault-only ~/research
+cd ~/research && claude
+```
+
+Hooks auto-detect the vault from cwd — no `.mnemos.yaml` needed. Use `/learn`, `/seed`, `/observe`, and other skills to build knowledge without any "project" code.
+
+**OpenClaw / cloud agents**: See [OpenClaw Adapter](adapters/openclaw/README.md) for agents that manage their own internal directories.
 
 ### Supported Harnesses
 
@@ -189,7 +229,17 @@ Edit `ops/schedule.yaml` in your vault to customize skills and times.
 | macOS | LaunchAgents | `~/Library/LaunchAgents/com.mnemos.{daily,weekly}.plist` |
 | Linux (systemd) | User timers | `~/.config/systemd/user/mnemos-{daily,weekly}.{service,timer}` |
 | Linux (no systemd) | crontab | Tagged entries for easy uninstall |
-| OpenClaw | Built-in cron | `openclaw cron add` (no external scheduler) |
+| OpenClaw | Built-in cron | Uses `openclaw cron add` — no external scheduler needed |
+
+**OpenClaw users**: Skip `schedule.sh` entirely. OpenClaw has built-in scheduling. After vault-only install, run:
+```bash
+openclaw cron add --name "mnemos-daily" --cron "0 9 * * *" --session isolated \
+  --message "/consolidate && /dream --daily && /curiosity && /stats"
+openclaw cron add --name "mnemos-weekly" --cron "0 3 * * 0" --session isolated \
+  --message "/dream --weekly && /graph health && /validate all && /rethink"
+```
+
+See [OpenClaw Adapter](adapters/openclaw/README.md) for full setup instructions.
 
 ### How It Works
 

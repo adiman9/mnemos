@@ -1,14 +1,99 @@
 # OpenClaw Adapter
 
-Adapter for [OpenClaw](https://github.com/openclaw/openclaw) via its Hook Pack system.
+Adapter for [OpenClaw](https://github.com/openclaw/openclaw) — a vault-only agent that manages its own workspace internally.
 
-## What It Does
+## Key Difference: No Workspace
 
-- Registers hooks via `package.json` + `hooks.json5` (OpenClaw's hook pack format)
-- Executes the same shell scripts as other adapters
-- Skills deployed to `.claude/skills/` (OpenClaw uses Claude Agent SDK conventions)
+Unlike Claude Code or OpenCode, OpenClaw doesn't operate in a user-visible workspace directory. It manages its own internal state. This means:
+
+- **No `.mnemos.yaml`** in a project directory
+- **No hook files** to install in a workspace
+- **Skills** are loaded via OpenClaw's native skill system
+- **Scheduling** uses OpenClaw's built-in `claw cron`, not external schedulers
+
+mnemos provides a **vault-only** install mode for OpenClaw that initializes the vault without workspace setup.
+
+## Install
+
+### Step 1: Initialize the Vault
+
+```bash
+./install.sh --vault-only ~/mnemos-vault
+```
+
+This creates the vault structure:
+```
+~/mnemos-vault/
+├── self/           # Identity, methodology, goals
+├── notes/          # Knowledge graph (Layer 2)
+├── memory/         # Working memory (Layer 1)
+├── ops/            # Queue, logs, config
+├── inbox/          # Source material
+└── templates/      # Note schemas
+```
+
+### Step 2: Configure OpenClaw
+
+Tell OpenClaw where your vault lives. Add to your claw config:
+
+```yaml
+mnemos:
+  vault_path: ~/mnemos-vault
+```
+
+Or set the environment variable:
+```bash
+export MNEMOS_VAULT=~/mnemos-vault
+```
+
+### Step 3: Load Skills
+
+OpenClaw loads skills from its native skill directory. Copy mnemos skills:
+
+```bash
+cp -r mnemos/core/skills/* ~/.openclaw/skills/
+```
+
+Or point OpenClaw at the mnemos skills directory in your config.
+
+### Step 4: Set Up Scheduling
+
+OpenClaw has built-in scheduling via `openclaw cron`. **Do not use `schedule.sh`** — it's for external OS schedulers.
+
+OpenClaw's scheduler runs in the Gateway process and persists jobs to `~/.openclaw/cron/jobs.json`. Jobs can run in isolated sessions (recommended for background maintenance) or inject into the main chat.
+
+```bash
+# Daily: consolidation, context-driven dreams, research, stats (9 AM)
+openclaw cron add \
+  --name "mnemos-daily" \
+  --cron "0 9 * * *" \
+  --session isolated \
+  --message "/consolidate && /dream --daily && /curiosity && /stats"
+
+# Weekly: deep dreams, graph health, validation (Sunday 3 AM)
+openclaw cron add \
+  --name "mnemos-weekly" \
+  --cron "0 3 * * 0" \
+  --session isolated \
+  --message "/dream --weekly && /graph health && /validate all && /rethink"
+```
+
+**Options:**
+- `--session isolated` — runs in a dedicated session (recommended for maintenance)
+- `--session main` — injects into your active chat session
+- `--announce --channel last` — posts results to your last active channel
+
+**Manage jobs:**
+```bash
+openclaw cron list              # View all scheduled jobs
+openclaw cron run <job-id>      # Trigger immediately
+openclaw cron edit <job-id> --enabled false  # Disable
+openclaw cron remove <job-id>   # Delete
+```
 
 ## Hook Coverage
+
+OpenClaw's hook system supports all mnemos lifecycle events:
 
 | mnemos Event | OpenClaw Hook | Status |
 |-------------|---------------|--------|
@@ -17,21 +102,18 @@ Adapter for [OpenClaw](https://github.com/openclaw/openclaw) via its Hook Pack s
 | Stop | `agent_end` | Full |
 | Auto-commit | `after_tool_call` (async) | Full |
 
-**Full coverage.** All 4 mnemos lifecycle events are supported.
+If you need hooks (for auto-commit on note writes, session capture, etc.), configure them in OpenClaw's hook system pointing to the scripts in `mnemos/core/hooks/scripts/`.
 
-## Install
+## Alternative: Legacy Workspace Install
+
+If you're using OpenClaw in a mode where it does have a visible workspace directory, you can use the standard install:
 
 ```bash
-# From mnemos root:
 ./install.sh --adapter openclaw <workspace-path> <vault-path>
 ```
 
-This will:
-1. Copy skills to `<workspace>/.claude/skills/`
-2. Copy hook scripts to `<workspace>/.mnemos/hooks/scripts/`
-3. Copy hook pack files to `<workspace>/.openclaw/hooks/mnemos/`
-4. Copy `SYSTEM.md` as `CLAUDE.md` at workspace root
+This installs the Hook Pack format (`package.json` + `hooks.json5`) to `<workspace>/.openclaw/hooks/mnemos/`. However, the vault-only approach above is recommended for typical OpenClaw usage.
 
 ## Status
 
-**Experimental.** Hook event names and `hooks.json5` format based on OpenClaw source analysis. May need adjustment for specific OpenClaw versions.
+**Experimental.** The vault-only workflow is the recommended approach. Hook pack format (`hooks.json5`) is based on OpenClaw source analysis and may need adjustment for specific versions.

@@ -30,3 +30,13 @@ All 4 mnemos lifecycle events are natively supported. No degradation.
 # Or auto-detect (default for workspaces with .claude/):
 ./install.sh <workspace-path> <vault-path>
 ```
+
+**Workspace** = Your project directory (where you run `claude`). mnemos installs hooks and skills here.
+
+**Vault** = Persistent knowledge store. Can be shared across multiple workspaces.
+
+Example:
+```bash
+./install.sh ~/projects/my-app ~/mnemos-vault
+./install.sh ~/projects/other-app ~/mnemos-vault  # Same vault, different workspace
+```
