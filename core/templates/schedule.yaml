@@ -2,7 +2,21 @@
 # Edit to customize which skills run and when.
 # Used by scheduled-run.sh to determine what to execute.
 
-# Daily skills — run once per day
+# In-session loops (Claude Code /loop feature)
+# Register automatically at session start. Fire while session is open.
+# Supported intervals: s (seconds), m (minutes), h (hours), d (days). No weeks.
+# Limitation: loops expire after 3 days and die when Claude Code exits.
+# For most cases, prefer the external scheduler (schedule.sh) which doesn't expire.
+# Loops are useful for high-frequency maintenance during active coding sessions.
+loops:
+  enabled: true
+  skills:
+    - interval: 1h
+      skill: /observe
+    - interval: 2h
+      skill: /consolidate
+
+# Daily skills — run once per day (external scheduler via schedule.sh)
 daily:
   time: "09:00"  # Local time (24h format). Actual execution depends on scheduler.
   skills:

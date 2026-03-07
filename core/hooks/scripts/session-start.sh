@@ -122,5 +122,74 @@ fi
 mkdir -p "$VAULT_PATH/memory/sessions"
 mkdir -p "$VAULT_PATH/memory/daily"
 
+# --- In-session loop registration (Claude Code only) ---
+emit_loop_commands() {
+    local schedule_file="$VAULT_PATH/ops/schedule.yaml"
+    [ -f "$schedule_file" ] || return 0
+    
+    local loops_enabled
+    loops_enabled=$(grep -A1 '^loops:' "$schedule_file" 2>/dev/null | grep 'enabled:' | grep -q 'true' && echo "1" || echo "0")
+    [ "$loops_enabled" = "1" ] || return 0
+    
+    local in_loops=0
+    local in_skills=0
+    local interval=""
+    local skill=""
+    
+    echo "--- In-Session Loops (register these now) ---"
+    echo ""
+    
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^loops: ]]; then
+            in_loops=1
+            continue
+        fi
+        
+        if [[ "$in_loops" -eq 1 ]] && [[ "$line" =~ ^[a-zA-Z] ]] && [[ ! "$line" =~ ^[[:space:]] ]]; then
+            in_loops=0
+            in_skills=0
+        fi
+        
+        if [[ "$in_loops" -eq 1 ]]; then
+            if [[ "$line" =~ ^[[:space:]]*skills: ]]; then
+                in_skills=1
+                continue
+            fi
+            
+            if [[ "$in_skills" -eq 1 ]]; then
+                if [[ "$line" =~ ^[[:space:]]*-[[:space:]]*interval: ]]; then
+                    interval=$(echo "$line" | sed 's/.*interval:[[:space:]]*//' | tr -d '"' | tr -d "'" | sed 's/[[:space:]]*$//')
+                elif [[ "$line" =~ ^[[:space:]]*skill: ]]; then
+                    skill=$(echo "$line" | sed 's/.*skill:[[:space:]]*//' | tr -d '"' | tr -d "'" | sed 's/[[:space:]]*$//')
+                    if [[ -n "$interval" ]] && [[ -n "$skill" ]]; then
+                        echo "/loop $interval $skill"
+                        interval=""
+                        skill=""
+                    fi
+                fi
+            fi
+        fi
+    done < "$schedule_file"
+    
+    echo ""
+}
+
+detect_harness() {
+    if [[ -n "${CLAUDE_CODE:-}" ]] || [[ -n "${CLAUDE_SESSION_ID:-}" ]] || [[ -d "$WORKSPACE_ROOT/.claude" ]]; then
+        echo "claude-code"
+    elif [[ -f "$WORKSPACE_ROOT/.opencode/config.json" ]] || [[ -f "$WORKSPACE_ROOT/opencode.json" ]]; then
+        echo "opencode"
+    elif [[ -d "$WORKSPACE_ROOT/.pi" ]]; then
+        echo "pi"
+    else
+        echo "unknown"
+    fi
+}
+
+HARNESS=$(detect_harness)
+if [[ "$HARNESS" = "claude-code" ]]; then
+    emit_loop_commands
+fi
+
 echo "--- Ready ---"
 echo "Read self/goals.md and self/identity.md to orient."
