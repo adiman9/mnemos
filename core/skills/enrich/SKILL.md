@@ -1,10 +1,13 @@
 ---
 name: enrich
+version: "0.1.0"
 description: Add content from a new source to an existing note. Updates the note body with new evidence, examples, or framing, and maintains multi-source attribution in the footer. Triggers on "/enrich", "/enrich [note]", "enrich this note".
 metadata:
   version: "1.0"
   generated_from: "mnemos-v0.1"
   argument-hint: "[note] [--handoff] — note to enrich (or task file context provides this)"
+  openclaw:
+    emoji: "✨"
 ---
 
 ## Vault Path Resolution (mnemos)

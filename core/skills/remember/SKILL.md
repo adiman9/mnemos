@@ -1,9 +1,12 @@
 ---
 name: remember
+version: "0.1.0"
 description: Capture friction as methodology notes. Three modes — explicit description, contextual (review recent corrections), session mining (scan transcripts for patterns). Triggers on "/remember", "/remember [description]".
 metadata:
   version: "1.0"
   generated_from: "arscontexta-v1.6"
+  openclaw:
+    emoji: "🧠"
 ---
 ## Vault Path Resolution (mnemos)
 

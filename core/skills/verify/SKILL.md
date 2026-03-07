@@ -1,6 +1,10 @@
 ---
 name: verify
+version: "0.1.0"
 description: Combined verification — recite (description quality via cold-read prediction) + validate (schema compliance) + review (health checks). Use as a quality gate after creating notes or as periodic maintenance. Triggers on "/verify", "/verify [note]", "verify note quality", "check note health".
+metadata:
+  openclaw:
+    emoji: "✅"
 ---
 ## Vault Path Resolution (mnemos)
 

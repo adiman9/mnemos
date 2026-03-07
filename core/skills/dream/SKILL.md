@@ -1,10 +1,13 @@
 ---
 name: dream
+version: "0.1.0"
 description: Generate speculative cross-domain connections in two modes - daily context-driven dreaming from today's observations, or weekly deep random sampling across domains. Scores speculations by novelty and files high-scoring ones for review. Triggers on "/dream", "find cross-domain connections", "speculate".
 metadata:
   version: "1.0"
   generated_from: "mnemos-v0.1"
   argument-hint: "[--daily | --weekly] [--samples N] [--domains D1,D2] [--review]"
+  openclaw:
+    emoji: "💭"
 ---
 
 ## Vault Path Resolution (mnemos)

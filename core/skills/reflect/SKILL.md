@@ -1,6 +1,10 @@
 ---
 name: reflect
+version: "0.1.0"
 description: Find connections between notes and update MOCs. Requires semantic judgment to identify genuine relationships. Use after /reduce creates notes, when exploring connections, or when a topic needs synthesis. Triggers on "/reflect", "/reflect [note]", "find connections", "update MOCs", "connect these notes".
+metadata:
+  openclaw:
+    emoji: "🔗"
 ---
 ## Vault Path Resolution (mnemos)
 

@@ -1,10 +1,13 @@
 ---
 name: tasks
+version: "0.1.0"
 description: View and manage the task stack and processing queue. Shows pending work, active tasks, completed items, and queue state. Triggers on "/tasks", "show tasks", "what's pending", "task list", "queue status".
 metadata:
   version: "1.0"
   generated_from: "arscontexta-v1.6"
   argument-hint: "[add|done|drop|reorder|status] [description|number] — manage task stack and view queue"
+  openclaw:
+    emoji: "✔️"
 ---
 ## Vault Path Resolution (mnemos)
 

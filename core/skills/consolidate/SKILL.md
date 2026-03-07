@@ -1,10 +1,13 @@
 ---
 name: consolidate
+version: "0.1.0"
 description: Promote high-value working memory observations to the long-term knowledge pipeline. Scans recent daily logs, applies promotion criteria, and batches promoted items through /reduce. Triggers on "/consolidate", "promote observations", "crystallize memory".
 metadata:
   version: "1.0"
   generated_from: "mnemos-v0.1"
   argument-hint: "[--days N] [--dry-run] — N = number of days to scan (default: 7). --dry-run shows what would be promoted without acting."
+  openclaw:
+    emoji: "🔄"
 ---
 
 ## Vault Path Resolution (mnemos)

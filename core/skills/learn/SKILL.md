@@ -1,6 +1,10 @@
 ---
 name: learn
+version: "0.1.0"
 description: Research a topic and grow your knowledge graph. Uses Exa deep researcher, web search, or basic search to investigate topics, files results with full provenance, and chains to processing pipeline. Triggers on "/learn", "/learn [topic]", "research this", "find out about".
+metadata:
+  openclaw:
+    emoji: "📚"
 ---
 ## Vault Path Resolution (mnemos)
 

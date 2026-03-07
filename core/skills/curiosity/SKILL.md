@@ -1,10 +1,13 @@
 ---
 name: curiosity
+version: "0.1.0"
 description: Proactive research discovery — analyzes recent vault activity, generates research candidates, scores by expected information gain, auto-triggers /learn for high-value topics. Triggers on "/curiosity", "what should I research", "find research opportunities".
 metadata:
   version: "1.0"
   generated_from: "mnemos-v0.1"
   argument-hint: "[--dry-run] [--threshold N] [--max N] — dry-run shows candidates without executing. threshold = EIG minimum (default: 0.7). max = maximum research triggers (default: 3)."
+  openclaw:
+    emoji: "🔍"
 ---
 ## Vault Path Resolution (mnemos)
 Before any file operations, resolve the vault root:

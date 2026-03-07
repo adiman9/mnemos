@@ -1,6 +1,10 @@
 ---
 name: validate
+version: "0.1.0"
 description: Schema validation for notes. Checks against domain-specific templates. Validates required fields, enum values, description quality, and link health. Non-blocking — warns but doesn't prevent capture. Triggers on "/validate", "/validate [note]", "check schema", "validate note", "validate all".
+metadata:
+  openclaw:
+    emoji: "🏷️"
 ---
 ## Vault Path Resolution (mnemos)
 

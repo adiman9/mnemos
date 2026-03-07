@@ -1,9 +1,12 @@
 ---
 name: reduce
+version: "0.1.0"
 description: Extract structured knowledge from source material. Comprehensive extraction is the default — every insight that serves the domain gets extracted. For domain-relevant sources, skip rate must be below 10%. Zero extraction from a domain-relevant source is a BUG. Triggers on "/reduce", "/reduce [file]", "extract insights", "mine this", "process this".
 metadata:
   version: "1.0"
   generated_from: "arscontexta-v1.6"
+  openclaw:
+    emoji: "⚗️"
 ---
 ## Vault Path Resolution (mnemos)
 

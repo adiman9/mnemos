@@ -1,9 +1,12 @@
 ---
 name: next
+version: "0.1.0"
 description: Surface the most valuable next action by combining task stack, queue state, inbox pressure, health, and goals. Recommends one specific action with rationale. Triggers on "/next", "what should I do", "what's next".
 metadata:
   version: "1.0"
   generated_from: "arscontexta-v1.6"
+  openclaw:
+    emoji: "📋"
 ---
 ## Vault Path Resolution (mnemos)
 

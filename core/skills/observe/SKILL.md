@@ -1,10 +1,13 @@
 ---
 name: observe
+version: "0.1.0"
 description: Extract typed observations from session transcripts. Reads recorded sessions incrementally, scores by importance/confidence/surprise, routes to daily logs. Triggers on "/observe", "process transcripts", "extract observations".
 metadata:
   version: "2.0"
   generated_from: "mnemos-v0.2"
   argument-hint: "[--all] [--session ID] [--since YYYY-MM-DD] — Process all unprocessed transcripts (default), a specific session, or sessions since a date."
+  openclaw:
+    emoji: "👁️"
 ---
 
 ## Vault Path Resolution (mnemos)

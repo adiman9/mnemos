@@ -1,10 +1,13 @@
 ---
 name: graph
+version: "0.1.0"
 description: Interactive knowledge graph analysis. Routes natural language questions to graph scripts, interprets results in domain vocabulary, and suggests concrete actions. Triggers on "/graph", "/graph health", "/graph triangles", "find synthesis opportunities", "graph analysis".
 metadata:
   version: "1.0"
   generated_from: "arscontexta-v1.6"
   argument-hint: "[operation] [target] — operations: health, triangles, bridges, clusters, hubs, siblings, forward, backward, query"
+  openclaw:
+    emoji: "🕸️"
 ---
 ## Vault Path Resolution (mnemos)
 

@@ -1,10 +1,13 @@
 ---
 name: stats
+version: "0.1.0"
 description: Show vault statistics and knowledge graph metrics. Provides a shareable snapshot of vault health, growth, and progress. Triggers on "/stats", "vault stats", "show metrics", "how big is my vault".
 metadata:
   version: "1.0"
   generated_from: "arscontexta-v1.6"
   argument-hint: "[--share] — optional flag for compact shareable output"
+  openclaw:
+    emoji: "📊"
 ---
 ## Vault Path Resolution (mnemos)
 

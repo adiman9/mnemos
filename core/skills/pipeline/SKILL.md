@@ -1,10 +1,13 @@
 ---
 name: pipeline
+version: "0.1.0"
 description: End-to-end source processing -- seed, reduce, process all claims through reflect/reweave/verify, archive. The full pipeline in one command. Triggers on "/pipeline", "/pipeline [file]", "process this end to end", "full pipeline".
 metadata:
   version: "1.0"
   generated_from: "arscontexta-v1.6"
   argument-hint: "[file] — path to source file to process end-to-end"
+  openclaw:
+    emoji: "🚰"
 ---
 ## Vault Path Resolution (mnemos)
 
