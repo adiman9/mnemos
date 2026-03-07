@@ -5,7 +5,7 @@
 # Usage:
 #   ./install.sh [--adapter <name>] <workspace-path> <vault-path>
 #
-# Adapters: claude-code (default), opencode, openclaw, codex
+# Adapters: claude-code (default), opencode, openclaw, codex, droids
 #
 # Examples:
 #   ./install.sh ~/projects/my-agent ~/memory/vault
@@ -43,6 +43,7 @@ while [[ $# -gt 0 ]]; do
             echo "  pi           Pi agent framework (badlogic/pi-mono)"
             echo "  openclaw     OpenClaw"
             echo "  codex        OpenAI Codex CLI"
+            echo "  droids       FactoryAI Droids"
             
             echo ""
             echo "Vault-only mode initializes the vault without workspace setup."
@@ -93,7 +94,8 @@ detect_adapter() {
         echo "openclaw"
     elif [[ -f "$WORKSPACE/.codex/config.toml" ]] || [[ -f "$HOME/.codex/config.toml" ]]; then
         echo "codex"
-
+    elif [[ -d "$WORKSPACE/.factory" ]] || [[ -d "$HOME/.factory" ]]; then
+        echo "droids"
     else
         echo "claude-code"
     fi
@@ -448,6 +450,51 @@ install_pi() {
 }
 
 # =============================================================================
+# Adapter: droids (FactoryAI Droids)
+# =============================================================================
+
+install_droids() {
+    echo "Installing skills..."
+    mkdir -p "$WORKSPACE/.factory/skills"
+    for skill_dir in "$SCRIPT_DIR"/core/skills/*/; do
+        skill_name=$(basename "$skill_dir")
+        target_dir="$WORKSPACE/.factory/skills/$skill_name"
+        mkdir -p "$target_dir"
+        cp -r "$skill_dir"* "$target_dir/"
+        echo "  + $skill_name"
+    done
+
+    echo "Installing hooks..."
+    mkdir -p "$WORKSPACE/.factory/hooks/scripts"
+    cp "$SCRIPT_DIR/adapters/droids/"*.sh "$WORKSPACE/.factory/hooks/scripts/"
+    chmod +x "$WORKSPACE/.factory/hooks/scripts/"*.sh
+
+    if [ -f "$WORKSPACE/.factory/settings.json" ]; then
+        local tmp_settings
+        tmp_settings=$(mktemp)
+        python3 -c "
+import json
+with open('$WORKSPACE/.factory/settings.json') as f:
+    settings = json.load(f)
+with open('$SCRIPT_DIR/adapters/droids/hooks.json') as f:
+    hooks_config = json.load(f)
+settings['hooks'] = hooks_config.get('hooks', hooks_config)
+with open('$tmp_settings', 'w') as f:
+    json.dump(settings, f, indent=2)
+    f.write('\n')
+" 2>/dev/null && mv "$tmp_settings" "$WORKSPACE/.factory/settings.json" || {
+            rm -f "$tmp_settings"
+            cp "$SCRIPT_DIR/adapters/droids/hooks.json" "$WORKSPACE/.factory/settings.json"
+        }
+    else
+        cp "$SCRIPT_DIR/adapters/droids/hooks.json" "$WORKSPACE/.factory/settings.json"
+    fi
+
+    echo "Installing system prompt..."
+    cp "$SCRIPT_DIR/core/SYSTEM.md" "$WORKSPACE/DROIDS.md"
+}
+
+# =============================================================================
 # Execute
 # =============================================================================
 
@@ -491,9 +538,12 @@ case "$ADAPTER" in
     pi)
         install_pi
         ;;
+    droids)
+        install_droids
+        ;;
     *)
         echo "Unknown adapter: $ADAPTER"
-        echo "Available: claude-code, opencode, pi, openclaw, codex"
+        echo "Available: claude-code, opencode, pi, openclaw, codex, droids"
         exit 1
         ;;
 esac

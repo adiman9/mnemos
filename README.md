@@ -64,6 +64,7 @@ Hooks auto-detect the vault from cwd — no `.mnemos.yaml` needed. Use `/learn`,
 | Cline (v3.36+) | `claude-code` | Full | Stable |
 | OpenCode | `opencode` | Full | Beta |
 | Pi framework | `pi` | Full | Beta |
+| FactoryAI Droids | `droids` | Full | Beta |
 | OpenClaw | `openclaw` | Full | Experimental |
 | Codex CLI | `codex` | Partial (no SessionStart, no per-write hooks) | Experimental |
 
@@ -82,6 +83,7 @@ mnemos/
 │   ├── claude-code/         # hooks.json (also Cursor, Cline)
 │   ├── opencode/            # TypeScript plugin
 │   ├── pi/                  # Pi extension (also covers OpenClaw, Graphone)
+│   ├── droids/              # FactoryAI Droids hooks
 │   ├── openclaw/            # Hook Pack (package.json + hooks.json5)
 │   ├── codex/               # config.toml notify
 │   └── cursor/              # Uses claude-code adapter
