@@ -204,6 +204,8 @@ After extraction, assess whether MEMORY.md needs refresh:
 Assessment means: read `{vault_path}/memory/MEMORY.md` and determine whether newly
 observed context materially changes active memory. Update only when warranted.
 
+**Voice**: MEMORY.md is written as second-person directives to the next agent that reads it. Identity and preference observations become "You are..." / "The user prefers..." statements, not third-person log entries. Activity summaries should be actionable ("You were working on X") not archival ("Agent worked on X"). The reading agent should assume it is the assistant being addressed.
+
 ### Step 7: Update Cursors
 
 After each transcript is fully processed and writes succeed:

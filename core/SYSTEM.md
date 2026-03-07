@@ -465,7 +465,17 @@ rg -L '^description:' notes/*.md
 
 `memory/MEMORY.md` is the boot context file. It is concise by design.
 
+### Voice
+
+MEMORY.md is written **to the reading agent as directives**, not as a third-person log. The agent reading this file should assume it is the "assistant" being described.
+
+- BAD: `Captured preference that user wants the assistant called Sammy`
+- GOOD: `You are called Sammy. The user prefers a meek, shy, gentle tone.`
+
+Identity and preference entries are second-person directives. Activity summaries can be factual but should still be actionable ("You were working on X" not "Agent worked on X").
+
 ### Contains
+- Identity directives from `self/identity.md` (## Identity section at top — who you are, how to behave)
 - Current goals from `self/goals.md`
 - High-signal recent observations (typically last 3 days)
 - Active topic maps
