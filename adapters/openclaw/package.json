@@ -2,11 +2,20 @@
   "name": "@mnemos/openclaw-hooks",
   "version": "0.1.0",
   "description": "mnemos lifecycle hooks for OpenClaw",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mnemos-ai/mnemos"
+  },
+  "homepage": "https://github.com/mnemos-ai/mnemos/tree/main/adapters/openclaw",
+  "keywords": ["mnemos", "openclaw", "hooks", "memory", "ai-agent"],
+  "license": "MIT",
   "openclaw": {
-    "hooks": "hooks.json5"
+    "plugin": "./openclaw.plugin.json",
+    "hooks": ["./hooks/mnemos"]
   },
   "files": [
-    "hooks.json5",
-    "HOOK.md"
+    "openclaw.plugin.json",
+    "hooks/",
+    "README.md"
   ]
 }
