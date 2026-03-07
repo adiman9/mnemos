@@ -377,13 +377,43 @@ install_codex() {
 
     install_hook_scripts "$WORKSPACE/.mnemos/hooks/scripts"
 
+    echo "Installing Codex notify hook..."
+    cp "$SCRIPT_DIR/adapters/codex/codex-notify.sh" "$WORKSPACE/.mnemos/hooks/scripts/codex-notify.sh"
+    chmod +x "$WORKSPACE/.mnemos/hooks/scripts/codex-notify.sh"
+    echo "  + codex-notify.sh"
+
     echo "Installing system prompt..."
     cp "$SCRIPT_DIR/core/SYSTEM.md" "$WORKSPACE/AGENTS.md"
+    cat >> "$WORKSPACE/AGENTS.md" << 'CODEX_FOOTER'
+
+---
+
+## Codex: Session Start
+
+Codex does not support automatic memory injection at session start. You MUST manually orient at the beginning of every session:
+
+1. Read `.mnemos.yaml` to resolve `vault_path`
+2. Read `<vault_path>/memory/MEMORY.md` for boot context (recent observations, active threads, maintenance alerts)
+3. Then proceed with the user's request
+
+Do this BEFORE responding to the first user message. MEMORY.md is compact — this adds seconds, not minutes.
+CODEX_FOOTER
+    echo "  + AGENTS.md (with Codex orient instructions)"
+
+    echo "Installing project-local Codex config..."
+    cat > "$WORKSPACE/.codex/config.toml" << TOML
+notify = ["$WORKSPACE/.mnemos/hooks/scripts/codex-notify.sh"]
+TOML
+    echo "  + .codex/config.toml (notify hook)"
 
     echo ""
-    echo "  Codex config: Add the following to ~/.codex/config.toml:"
+    echo "  Manual step: Ensure the project is trusted in ~/.codex/config.toml:"
     echo ""
-    echo "    notify = [\"$WORKSPACE/.mnemos/hooks/scripts/session-capture.sh\"]"
+    echo "    [projects.\"$WORKSPACE\"]"
+    echo "    trust_level = \"trusted\""
+    echo ""
+    echo "  If you have a custom global notify (e.g. desktop notifications),"
+    echo "  chain it in .codex/config.toml to preserve it for this project."
     echo ""
     echo "  Note: Codex only supports after-turn hooks. SessionStart and"
     echo "  per-file-write hooks are not available. Skills work fully."

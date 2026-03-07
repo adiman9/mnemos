@@ -35,15 +35,18 @@ This will:
 
 ## Manual Config
 
-Add to `~/.codex/config.toml`:
+Ensure the project is trusted in `~/.codex/config.toml`:
 
 ```toml
-notify = ["/path/to/workspace/.mnemos/hooks/scripts/codex-notify.sh"]
+[projects."/path/to/workspace"]
+trust_level = "trusted"
 ```
+
+The installer creates a project-local `.codex/config.toml` with the notify hook automatically. If you have a custom global `notify` (e.g. desktop notifications), chain it in the project-local config to preserve it.
 
 ## Transcript Capture
 
-Codex writes session rollouts to `rollouts/*.jsonl`. The `notify` hook can invoke `session-capture.sh` to incrementally convert these to mnemos standard JSONL format in `memory/sessions/`. Without a pre-compaction hook, some transcript data may be lost during context resets.
+Codex writes session rollouts to `~/.codex/sessions/YYYY/MM/DD/rollout-*-{thread-id}.jsonl`. The `codex-notify.sh` hook fires after each agent turn, reads the rollout file, and incrementally converts new entries to mnemos standard JSONL format in `memory/sessions/`. It uses byte-offset cursors to avoid re-processing previously captured content.
 
 ## Limitations
 
