@@ -1,0 +1,24 @@
+{
+  "id": "mnemos",
+  "name": "mnemos",
+  "version": "0.1.0",
+  "description": "3-layer memory system for AI agents. Working memory captures what happens. Long-term knowledge curates what matters. The dream layer finds connections nobody asked for.",
+  "kind": "memory",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "vaultPath": {
+        "type": "string",
+        "description": "Path to the mnemos vault directory. If not set, resolved from .mnemos.yaml or defaults to ~/.mnemos/vault. Used as MNEMOS_VAULT env var when running hooks."
+      }
+    },
+    "additionalProperties": false
+  },
+  "uiHints": {
+    "vaultPath": {
+      "label": "Vault Path",
+      "placeholder": "~/.mnemos/vault",
+      "description": "Path to your mnemos memory vault"
+    }
+  }
+}

@@ -5,10 +5,14 @@ set -euo pipefail
 WORKSPACE_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 MNEMOS_CONFIG="$WORKSPACE_ROOT/.mnemos.yaml"
 
-[ -f "$MNEMOS_CONFIG" ] || exit 0
-
-VAULT_PATH=$(grep '^vault_path:' "$MNEMOS_CONFIG" | sed 's/vault_path: *//' | tr -d '"' | tr -d "'")
-[ -n "$VAULT_PATH" ] || VAULT_PATH="$HOME/.mnemos/vault"
+# Support MNEMOS_VAULT env var for vault-only mode (e.g. OpenClaw, no .mnemos.yaml)
+if [ -n "${MNEMOS_VAULT:-}" ]; then
+    VAULT_PATH="$MNEMOS_VAULT"
+else
+    [ -f "$MNEMOS_CONFIG" ] || exit 0
+    VAULT_PATH=$(grep '^vault_path:' "$MNEMOS_CONFIG" | sed 's/vault_path: *//' | tr -d '"' | tr -d "'")
+    [ -n "$VAULT_PATH" ] || VAULT_PATH="$HOME/.mnemos/vault"
+fi
 [ -d "$VAULT_PATH" ] || exit 0
 
 PAYLOAD=""
