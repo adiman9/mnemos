@@ -15,7 +15,24 @@ mnemos provides a **vault-only** install mode for OpenClaw that initializes the 
 
 ## Install
 
-### Step 1: Initialize the Vault
+### Primary: npm install via OpenClaw CLI
+
+The recommended way to install mnemos for OpenClaw is via npm. This installs the `@mnemos/openclaw-hooks` package and registers it with your OpenClaw gateway.
+
+```bash
+# Install from npm
+openclaw hooks install @mnemos/openclaw-hooks
+openclaw hooks enable mnemos
+
+# Configure vault path (optional if .mnemos.yaml exists)
+openclaw config set plugins.mnemos.config.vaultPath ~/mnemos-vault
+```
+
+### Alternative: Vault-Only Install
+
+For users who prefer a manual setup or don't want to use npm, you can initialize the vault directly.
+
+#### Step 1: Initialize the Vault
 
 ```bash
 ./install.sh --vault-only ~/mnemos-vault
@@ -93,20 +110,20 @@ openclaw cron remove <job-id>   # Delete
 
 ## Hook Coverage
 
-OpenClaw's hook system supports all mnemos lifecycle events:
+mnemos hooks into OpenClaw's lifecycle events to capture knowledge and maintain continuity.
 
-| mnemos Event | OpenClaw Hook | Status |
-|-------------|---------------|--------|
-| SessionStart | `session_start` | Full |
-| PostToolUse (Write) | `after_tool_call` (tool_filter: write) | Full |
-| Transcript capture | `gateway:heartbeat` (periodic) | Full |
-| Pre-compact | `compaction:memoryFlush` | Full |
-| Session end | `agent_end` | Full |
-| Auto-commit | `after_tool_call` (async) | Full |
+### Verified Events
+
+| OpenClaw Hook | Purpose | Script |
+|---------------|---------|--------|
+| `gateway:startup` | Inject boot context on startup | `session-start.sh` |
+| `agent:bootstrap` | Initialize session and identity | `session-start.sh` |
+| `command:new` | Capture transcript before session reset | `session-capture.sh` |
+| `session:compact:before` | Safety flush before context compaction | `pre-compact.sh` |
 
 ### Passive Observation Pipeline
 
-OpenClaw captures transcripts incrementally via the `gateway:heartbeat` hook (fires ~every 60s). The `compaction:memoryFlush` hook provides a safety net before context compaction. Session transcripts are stored in `{vault}/memory/sessions/{session-id}.jsonl` in standard mnemos JSONL format.
+OpenClaw captures transcripts incrementally via these hooks. Session transcripts are stored in `{vault}/memory/sessions/{session-id}.jsonl` in standard mnemos JSONL format.
 
 The `/observe` skill then reads these transcripts to extract typed observations — this can run manually or via the daily `openclaw cron` schedule.
 
@@ -118,8 +135,8 @@ If you're using OpenClaw in a mode where it does have a visible workspace direct
 ./install.sh --adapter openclaw <workspace-path> <vault-path>
 ```
 
-This installs the Hook Pack format (`package.json` + `hooks.json5`) to `<workspace>/.openclaw/hooks/mnemos/`. However, the vault-only approach above is recommended for typical OpenClaw usage.
+This installs the `@mnemos/openclaw-hooks` package to `<workspace>/.openclaw/hooks/mnemos/`. However, the npm-based approach or vault-only approach above is recommended for typical OpenClaw usage.
 
 ## Status
 
-**Experimental.** The vault-only workflow is the recommended approach. Hook pack format (`hooks.json5`) is based on OpenClaw source analysis and may need adjustment for specific versions.
+**Beta.** The npm install and vault-only workflows are the recommended approaches. Verified for OpenClaw v0.8.0+.
