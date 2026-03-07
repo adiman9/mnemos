@@ -5,7 +5,7 @@
 # Usage:
 #   ./install.sh [--adapter <name>] <workspace-path> <vault-path>
 #
-# Adapters: claude-code (default), opencode, openclaw, codex, amp
+# Adapters: claude-code (default), opencode, openclaw, codex
 #
 # Examples:
 #   ./install.sh ~/projects/my-agent ~/memory/vault
@@ -43,7 +43,7 @@ while [[ $# -gt 0 ]]; do
             echo "  pi           Pi agent framework (badlogic/pi-mono)"
             echo "  openclaw     OpenClaw"
             echo "  codex        OpenAI Codex CLI"
-            echo "  amp          Amp (Sourcegraph)"
+            
             echo ""
             echo "Vault-only mode initializes the vault without workspace setup."
             echo "Use this for agents like OpenClaw that manage their own directories."
@@ -93,8 +93,7 @@ detect_adapter() {
         echo "openclaw"
     elif [[ -f "$WORKSPACE/.codex/config.toml" ]] || [[ -f "$HOME/.codex/config.toml" ]]; then
         echo "codex"
-    elif [[ -d "$WORKSPACE/.amp" ]] || [[ -n "${AMP_TOOLBOX:-}" ]]; then
-        echo "amp"
+
     else
         echo "claude-code"
     fi
@@ -419,30 +418,7 @@ TOML
     echo "  per-file-write hooks are not available. Skills work fully."
 }
 
-# =============================================================================
-# Adapter: amp
-# =============================================================================
 
-install_amp() {
-    echo "Installing skills..."
-    mkdir -p "$WORKSPACE/.amp/skills"
-    for skill_dir in "$SCRIPT_DIR"/core/skills/*/; do
-        skill_name=$(basename "$skill_dir")
-        target_dir="$WORKSPACE/.amp/skills/$skill_name"
-        mkdir -p "$target_dir"
-        cp -r "$skill_dir"* "$target_dir/"
-        echo "  + $skill_name"
-    done
-
-    install_hook_scripts "$WORKSPACE/.mnemos/hooks/scripts"
-
-    echo "Installing system prompt..."
-    cp "$SCRIPT_DIR/core/SYSTEM.md" "$WORKSPACE/AGENT.md"
-
-    echo ""
-    echo "  Note: Amp hook integration via Toolboxes is experimental."
-    echo "  See adapters/amp/README.md for details."
-}
 
 # =============================================================================
 # Adapter: pi (badlogic/pi-mono — also covers OpenClaw, Graphone, etc.)
@@ -515,12 +491,9 @@ case "$ADAPTER" in
     pi)
         install_pi
         ;;
-    amp)
-        install_amp
-        ;;
     *)
         echo "Unknown adapter: $ADAPTER"
-        echo "Available: claude-code, opencode, pi, openclaw, codex, amp"
+        echo "Available: claude-code, opencode, pi, openclaw, codex"
         exit 1
         ;;
 esac

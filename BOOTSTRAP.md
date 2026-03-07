@@ -34,14 +34,13 @@ elif [ -d ".openclaw" ]; then
   ADAPTER="openclaw"
 elif [ -f ".codex/config.toml" ] || [ -f "$HOME/.codex/config.toml" ]; then
   ADAPTER="codex"
-elif [ -d ".amp" ]; then
-  ADAPTER="amp"
+
 else
   ADAPTER="claude-code"
 fi
 ```
 
-If you know your harness already, just pick: `claude-code` | `opencode` | `pi` | `openclaw` | `codex` | `amp`
+If you know your harness already, just pick: `claude-code` | `opencode` | `pi` | `openclaw` | `codex`
 
 The `claude-code` adapter also works for **Cursor** and **Cline**.
 

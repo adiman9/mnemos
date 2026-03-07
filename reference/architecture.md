@@ -21,7 +21,7 @@ adapters/           Harness-specific: Claude Code hooks.json, OpenCode TS plugin
 install.sh          Auto-detects harness and deploys the correct adapter
 ```
 
-Supported: Claude Code, Cursor, Cline, OpenCode, OpenClaw, Codex CLI, Amp (planned).
+Supported: Claude Code, Cursor, Cline, OpenCode, OpenClaw, Codex CLI.
 
 ## System Overview
 
@@ -89,7 +89,7 @@ Pre-compact hook ──> pre-compact.sh ─────────────�
 | OpenCode | `chat.message` + `tool.execute.after` | `experimental.session.compacting` | Native plugin API |
 | OpenClaw | `gateway:heartbeat` (periodic) | `compaction:memoryFlush` | `.jsonl` on disk |
 | Codex | `after_tool_use` | — | `rollouts/*.jsonl` |
-| Amp | `post-turn` | — | `~/.amp/sessions/` |
+
 
 All adapters produce the same standard JSONL format in `memory/sessions/`:
 ```jsonl

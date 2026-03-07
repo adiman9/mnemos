@@ -60,8 +60,7 @@ detect_adapter() {
         echo "openclaw"
     elif [[ -f "$WORKSPACE/.codex/config.toml" ]] || [[ -f "$HOME/.codex/config.toml" ]]; then
         echo "codex"
-    elif [[ -n "${AMP_TOOLBOX:-}" ]]; then
-        echo "amp"
+
     else
         echo "claude-code"
     fi

@@ -66,7 +66,6 @@ Hooks auto-detect the vault from cwd — no `.mnemos.yaml` needed. Use `/learn`,
 | Pi framework | `pi` | Full | Beta |
 | OpenClaw | `openclaw` | Full | Experimental |
 | Codex CLI | `codex` | Partial (no SessionStart, no per-write hooks) | Experimental |
-| Amp | `amp` | Partial | Planned |
 
 All adapters deploy the same core skills and vault structure. Adapters differ only in how lifecycle hooks are triggered.
 
@@ -85,8 +84,7 @@ mnemos/
 │   ├── pi/                  # Pi extension (also covers OpenClaw, Graphone)
 │   ├── openclaw/            # Hook Pack (package.json + hooks.json5)
 │   ├── codex/               # config.toml notify
-│   ├── cursor/              # Uses claude-code adapter
-│   └── amp/                 # Toolbox scripts (planned)
+│   └── cursor/              # Uses claude-code adapter
 ├── install.sh               # Auto-detects harness, deploys adapter
 └── schedule.sh              # Sets up OS-level scheduled execution
 ```
