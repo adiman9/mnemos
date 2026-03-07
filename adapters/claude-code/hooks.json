@@ -1,41 +1,54 @@
-[
-  {
-    "name": "mnemos-session-start",
-    "description": "Inject MEMORY.md and recent observations at session start",
-    "event": "SessionStart",
-    "script": "hooks/scripts/session-start.sh",
-    "timeout": 10000
-  },
-  {
-    "name": "mnemos-transcript-capture",
-    "description": "Incrementally capture session transcript to vault (fires every turn)",
-    "event": "Stop",
-    "script": "hooks/scripts/session-capture.sh",
-    "timeout": 3000,
-    "async": true
-  },
-  {
-    "name": "mnemos-pre-compact",
-    "description": "Emergency transcript flush before context compaction",
-    "event": "PreCompact",
-    "script": "hooks/scripts/pre-compact.sh",
-    "timeout": 5000
-  },
-  {
-    "name": "mnemos-validate-note",
-    "description": "Schema enforcement on note writes",
-    "event": "PostToolUse",
-    "tool": "Write",
-    "script": "hooks/scripts/validate-note.sh",
-    "timeout": 5000
-  },
-  {
-    "name": "mnemos-auto-commit",
-    "description": "Non-blocking git auto-commit on vault changes",
-    "event": "PostToolUse",
-    "tool": "Write",
-    "script": "hooks/scripts/auto-commit.sh",
-    "timeout": 5000,
-    "async": true
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/session-start.sh",
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/session-capture.sh",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/pre-compact.sh",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/validate-note.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/auto-commit.sh",
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
   }
-]
+}

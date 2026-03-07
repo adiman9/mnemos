@@ -11,19 +11,32 @@ VAULT_PATH=$(grep '^vault_path:' "$MNEMOS_CONFIG" | sed 's/vault_path: *//' | tr
 [ -n "$VAULT_PATH" ] || VAULT_PATH="$WORKSPACE_ROOT"
 [ -d "$VAULT_PATH" ] || exit 0
 
-SESSION_ID="${CLAUDE_CONVERSATION_ID:-$(date +%Y%m%d-%H%M%S)}"
-
 PAYLOAD=""
-TRANSCRIPT_PATH=""
 if read -t 1 -r PAYLOAD 2>/dev/null; then
-    TRANSCRIPT_PATH=$(echo "$PAYLOAD" | grep -o '"transcript_path":"[^"]*"' | cut -d'"' -f4)
+    true
 fi
+
+TRANSCRIPT_PATH=""
+STDIN_SESSION_ID=""
+if [ -n "$PAYLOAD" ]; then
+    TRANSCRIPT_PATH=$(printf '%s' "$PAYLOAD" | sed -n 's/.*"transcript_path" *: *"\([^"]*\)".*/\1/p')
+    STDIN_SESSION_ID=$(printf '%s' "$PAYLOAD" | sed -n 's/.*"session_id" *: *"\([^"]*\)".*/\1/p')
+fi
+
+SESSION_ID="${STDIN_SESSION_ID:-${CLAUDE_SESSION_ID:-${CLAUDE_CONVERSATION_ID:-$(date +%Y%m%d-%H%M%S)}}}"
 
 if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
-    TRANSCRIPT_PATH="$HOME/.claude/transcripts/${SESSION_ID}.jsonl"
+    for candidate in \
+        "$HOME/.claude/projects/"*"/sessions/${SESSION_ID}.jsonl" \
+        "$HOME/.claude/projects/"*"/transcript.jsonl"; do
+        if [ -f "$candidate" ]; then
+            TRANSCRIPT_PATH="$candidate"
+            break
+        fi
+    done
 fi
 
-[ -f "$TRANSCRIPT_PATH" ] || exit 0
+[ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] || exit 0
 
 SESSIONS_DIR="$VAULT_PATH/memory/sessions"
 CURSOR_FILE="$SESSIONS_DIR/.cursors.json"
@@ -33,200 +46,131 @@ META_FILE="$SESSIONS_DIR/${SESSION_ID}.meta.json"
 mkdir -p "$SESSIONS_DIR"
 [ -f "$CURSOR_FILE" ] || printf '{}\n' > "$CURSOR_FILE"
 
-iso_now() {
-    date -u +%Y-%m-%dT%H:%M:%SZ
-}
+python3 - "$TRANSCRIPT_PATH" "$SESSIONS_DIR" "$SESSION_ID" "$CURSOR_FILE" "$META_FILE" << 'PYEOF'
+import json, sys, os
+from datetime import datetime, timezone
 
-extract_json_string() {
-    local key="$1"
-    local line="$2"
-    printf '%s\n' "$line" | awk -v key="$key" '
-    {
-        pat = "\"" key "\":\""
-        start = index($0, pat)
-        if (start == 0) {
-            exit
-        }
-        i = start + length(pat)
-        esc = 0
-        out = ""
-        for (; i <= length($0); i++) {
-            c = substr($0, i, 1)
-            if (esc == 1) {
-                out = out c
-                esc = 0
-                continue
-            }
-            if (c == "\\") {
-                out = out c
-                esc = 1
-                continue
-            }
-            if (c == "\"") {
-                print out
-                exit
-            }
-            out = out c
-        }
-    }'
-}
+transcript_path = sys.argv[1]
+sessions_dir = sys.argv[2]
+session_id = sys.argv[3]
+cursor_file = sys.argv[4]
+meta_file = sys.argv[5]
+output_file = os.path.join(sessions_dir, f"{session_id}.jsonl")
+max_content = 2000
 
-json_escape() {
-    printf '%s' "$1" | awk 'BEGIN { first = 1 }
-    {
-        gsub(/\\/, "\\\\")
-        gsub(/"/, "\\\"")
-        gsub(/\r/, "\\r")
-        gsub(/\t/, "\\t")
-        if (first == 1) {
-            printf "%s", $0
-            first = 0
-        } else {
-            printf "\\n%s", $0
-        }
-    }
-    END {
-        if (NR == 0) {
-            printf ""
-        }
-    }'
-}
+def iso_now():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-truncate_content() {
-    local content="$1"
-    local max_len=2000
-    if [ "${#content}" -gt "$max_len" ]; then
-        printf '%s' "${content:0:$max_len}[truncated]"
-    else
-        printf '%s' "$content"
-    fi
-}
+cursors = {}
+if os.path.isfile(cursor_file):
+    try:
+        with open(cursor_file) as f:
+            cursors = json.load(f)
+    except (json.JSONDecodeError, IOError):
+        cursors = {}
 
-current_offset() {
-    local sid="$1"
-    local raw
-    raw=$(tr -d '\n' < "$CURSOR_FILE" 2>/dev/null || printf '{}')
-    printf '%s' "$raw" | grep -o '"'"$sid"'":{[^}]*}' | grep -o '"offset":[0-9][0-9]*' | head -n1 | sed 's/"offset"://'
-}
+entry = cursors.get(session_id, {})
+offset = entry.get("offset", 0)
 
-current_observed_offset() {
-    local sid="$1"
-    local raw
-    raw=$(tr -d '\n' < "$CURSOR_FILE" 2>/dev/null || printf '{}')
-    printf '%s' "$raw" | grep -o '"'"$sid"'":{[^}]*}' | grep -o '"observed_offset":[0-9][0-9]*' | head -n1 | sed 's/"observed_offset"://'
-}
+native_size = os.path.getsize(transcript_path)
+if offset > native_size:
+    offset = 0
 
-write_cursor() {
-    local sid="$1"
-    local new_offset="$2"
-    local now="$3"
-    local raw
-    raw=$(tr -d '\n' < "$CURSOR_FILE" 2>/dev/null || printf '{}')
+if not os.path.isfile(meta_file):
+    with open(meta_file, "w") as f:
+        json.dump({"session_id": session_id, "harness": "claude-code",
+                    "start_time": iso_now(), "vault_path": sessions_dir.rsplit("/memory/sessions", 1)[0]}, f)
+        f.write("\n")
 
-    # Preserve observed_offset if it exists
-    local obs_offset
-    obs_offset=$(current_observed_offset "$sid")
+if offset >= native_size:
+    sys.exit(0)
 
-    local new_entry
-    if [ -n "$obs_offset" ]; then
-        new_entry="\"$sid\":{\"offset\":$new_offset,\"observed_offset\":$obs_offset,\"last_capture\":\"$now\"}"
-    else
-        new_entry="\"$sid\":{\"offset\":$new_offset,\"last_capture\":\"$now\"}"
-    fi
+with open(transcript_path, "rb") as f:
+    f.seek(offset)
+    new_data = f.read()
 
-    # Extract all session entries from the cursor file
-    local entries
-    entries=$(printf '%s' "$raw" | grep -o '"[^"]*":{[^}]*}' || true)
+lines = new_data.decode("utf-8", errors="replace").splitlines()
+output_lines = []
 
-    local out
-    out="{$new_entry"
+for raw_line in lines:
+    raw_line = raw_line.strip()
+    if not raw_line:
+        continue
+    try:
+        obj = json.loads(raw_line)
+    except json.JSONDecodeError:
+        continue
 
-    while IFS= read -r entry; do
-        [ -z "$entry" ] && continue
-        local key
-        key=$(printf '%s' "$entry" | sed -E 's/^"([^"]+)":.*/\1/')
-        [ "$key" = "$sid" ] && continue
-        out="$out,$entry"
-    done <<EOF_ENTRIES
-$entries
-EOF_ENTRIES
+    line_type = obj.get("type", "")
+    ts = obj.get("timestamp", iso_now())
+    msg = obj.get("message", {})
+    if not isinstance(msg, dict):
+        continue
 
-    out="$out}"
-    printf '%s\n' "$out" > "$CURSOR_FILE"
-}
+    role = msg.get("role", "")
+    content_raw = msg.get("content", "")
 
-map_line() {
-    local line="$1"
-    local role=""
-    local content=""
-    local tool=""
+    if line_type == "user" and role == "user":
+        content = content_raw if isinstance(content_raw, str) else ""
+        if isinstance(content_raw, list):
+            parts = [p.get("text", "") for p in content_raw if isinstance(p, dict) and p.get("type") == "text"]
+            content = "\n".join(parts)
+        if not content:
+            continue
+        if len(content) > max_content:
+            content = content[:max_content] + "[truncated]"
+        output_lines.append(json.dumps({"ts": ts, "role": "user", "content": content, "session_id": session_id}))
 
-    if printf '%s' "$line" | grep -q '"type":"human"'; then
-        role="user"
-        content=$(extract_json_string "content" "$line")
-        [ -n "$content" ] || content=$(extract_json_string "text" "$line")
-    elif printf '%s' "$line" | grep -q '"type":"assistant"'; then
-        role="assistant"
-        content=$(extract_json_string "content" "$line")
-        [ -n "$content" ] || content=$(extract_json_string "text" "$line")
-    elif printf '%s' "$line" | grep -q '"type":"tool_use"'; then
-        role="tool_use"
-        tool=$(extract_json_string "name" "$line")
-        content=$(extract_json_string "input" "$line")
-        [ -n "$content" ] || content=$(extract_json_string "content" "$line")
-    elif printf '%s' "$line" | grep -q '"type":"tool_result"'; then
-        role="tool_result"
-        content=$(extract_json_string "content" "$line")
-        [ -n "$content" ] || content=$(extract_json_string "text" "$line")
-    else
-        return 0
-    fi
+    elif line_type == "assistant" and role == "assistant":
+        if not isinstance(content_raw, list):
+            continue
+        text_parts = [p.get("text", "") for p in content_raw if isinstance(p, dict) and p.get("type") == "text"]
+        tool_parts = [p for p in content_raw if isinstance(p, dict) and p.get("type") == "tool_use"]
 
-    content=$(truncate_content "$content")
+        text_content = "\n".join(t for t in text_parts if t)
+        if text_content:
+            if len(text_content) > max_content:
+                text_content = text_content[:max_content] + "[truncated]"
+            output_lines.append(json.dumps({"ts": ts, "role": "assistant", "content": text_content, "session_id": session_id}))
 
-    local ts
-    ts=$(iso_now)
+        for tp in tool_parts:
+            tool_name = tp.get("name", "unknown")
+            tool_input = json.dumps(tp.get("input", {}))
+            if len(tool_input) > max_content:
+                tool_input = tool_input[:max_content] + "[truncated]"
+            output_lines.append(json.dumps({"ts": ts, "role": "tool_use", "content": tool_input, "tool": tool_name, "session_id": session_id}))
 
-    if [ -n "$tool" ]; then
-        printf '{"ts":"%s","role":"%s","content":"%s","tool":"%s","session_id":"%s"}\n' \
-            "$ts" "$role" "$(json_escape "$content")" "$(json_escape "$tool")" "$SESSION_ID"
-    else
-        printf '{"ts":"%s","role":"%s","content":"%s","session_id":"%s"}\n' \
-            "$ts" "$role" "$(json_escape "$content")" "$SESSION_ID"
-    fi
-}
+    elif line_type == "tool_result":
+        content = ""
+        if isinstance(content_raw, str):
+            content = content_raw
+        elif isinstance(content_raw, list):
+            parts = [p.get("text", "") for p in content_raw if isinstance(p, dict)]
+            content = "\n".join(parts)
+        if not content:
+            continue
+        if len(content) > max_content:
+            content = content[:max_content] + "[truncated]"
+        tool_name = obj.get("tool_name", msg.get("name", ""))
+        out = {"ts": ts, "role": "tool_result", "content": content, "session_id": session_id}
+        if tool_name:
+            out["tool"] = tool_name
+        output_lines.append(json.dumps(out))
 
-if [ ! -f "$META_FILE" ]; then
-    START_TIME=$(iso_now)
-    printf '{"session_id":"%s","harness":"claude-code","start_time":"%s","vault_path":"%s"}\n' \
-        "$SESSION_ID" "$START_TIME" "$(json_escape "$VAULT_PATH")" > "$META_FILE"
-fi
+if output_lines:
+    with open(output_file, "a") as f:
+        for ol in output_lines:
+            f.write(ol + "\n")
 
-offset=$(current_offset "$SESSION_ID")
-[ -n "$offset" ] || offset=0
+entry["offset"] = native_size
+entry["last_capture"] = iso_now()
+if "observed_offset" not in entry:
+    entry["observed_offset"] = 0
+cursors[session_id] = entry
 
-native_size=$(wc -c < "$TRANSCRIPT_PATH" | tr -d ' ')
-if [ "$offset" -gt "$native_size" ] 2>/dev/null; then
-    offset=0
-fi
-
-tmp_new=$(mktemp)
-cleanup() {
-    rm -f "$tmp_new"
-}
-trap cleanup EXIT
-
-start_byte=$((offset + 1))
-tail -c +"$start_byte" "$TRANSCRIPT_PATH" > "$tmp_new" 2>/dev/null || true
-
-if [ -s "$tmp_new" ]; then
-    while IFS= read -r line || [ -n "$line" ]; do
-        mapped=$(map_line "$line") || true
-        [ -n "${mapped:-}" ] && printf '%s\n' "$mapped" >> "$OUTPUT_FILE"
-    done < "$tmp_new"
-fi
-
-capture_time=$(iso_now)
-write_cursor "$SESSION_ID" "$native_size" "$capture_time"
+with open(cursor_file, "w") as f:
+    json.dump(cursors, f)
+    f.write("\n")
+PYEOF
 
 exit 0

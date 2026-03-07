@@ -17,8 +17,16 @@ VAULT_PATH=$(grep '^vault_path:' "$MNEMOS_CONFIG" | sed 's/vault_path: *//' | tr
 # Verify vault exists
 [ -d "$VAULT_PATH" ] || exit 0
 
-# --- Session ID ---
-SESSION_ID="${CLAUDE_CONVERSATION_ID:-$(date +%Y%m%d-%H%M%S)}"
+# --- Session ID (try stdin payload, then env vars, then fallback) ---
+PAYLOAD=""
+if read -t 1 -r PAYLOAD 2>/dev/null; then
+    true
+fi
+STDIN_SESSION_ID=""
+if [ -n "$PAYLOAD" ]; then
+    STDIN_SESSION_ID=$(printf '%s' "$PAYLOAD" | sed -n 's/.*"session_id" *: *"\([^"]*\)".*/\1/p')
+fi
+SESSION_ID="${STDIN_SESSION_ID:-${CLAUDE_SESSION_ID:-${CLAUDE_CONVERSATION_ID:-$(date +%Y%m%d-%H%M%S)}}}"
 
 echo "=== mnemos Session Start ==="
 echo ""

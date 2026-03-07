@@ -264,9 +264,33 @@ install_claude_code() {
     done
 
     echo "Installing hooks..."
-    mkdir -p "$WORKSPACE/.claude/hooks"
-    cp "$SCRIPT_DIR/adapters/claude-code/hooks.json" "$WORKSPACE/.claude/hooks/"
+    mkdir -p "$WORKSPACE/.claude/hooks/scripts"
     install_hook_scripts "$WORKSPACE/.claude/hooks/scripts"
+
+    # Merge hooks into .claude/settings.json (preserve existing settings)
+    if [ -f "$WORKSPACE/.claude/settings.json" ]; then
+        # If settings.json exists, merge hooks key using a temp file
+        local tmp_settings
+        tmp_settings=$(mktemp)
+        # Read existing settings, inject hooks from adapter template
+        python3 -c "
+import json, sys
+with open('$WORKSPACE/.claude/settings.json') as f:
+    settings = json.load(f)
+with open('$SCRIPT_DIR/adapters/claude-code/hooks.json') as f:
+    hooks_config = json.load(f)
+settings['hooks'] = hooks_config.get('hooks', hooks_config)
+with open('$tmp_settings', 'w') as f:
+    json.dump(settings, f, indent=2)
+    f.write('\n')
+" 2>/dev/null && mv "$tmp_settings" "$WORKSPACE/.claude/settings.json" || {
+            # Fallback: just copy the hooks config as settings.json
+            rm -f "$tmp_settings"
+            cp "$SCRIPT_DIR/adapters/claude-code/hooks.json" "$WORKSPACE/.claude/settings.json"
+        }
+    else
+        cp "$SCRIPT_DIR/adapters/claude-code/hooks.json" "$WORKSPACE/.claude/settings.json"
+    fi
 
     echo "Installing system prompt..."
     cp "$SCRIPT_DIR/core/SYSTEM.md" "$WORKSPACE/CLAUDE.md"
