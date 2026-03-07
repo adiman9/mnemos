@@ -20,11 +20,14 @@ Before any memory operation:
 1. Read `.mnemos.yaml` from the workspace root (the project directory where you are running)
 2. Resolve `vault_path`
 3. Treat **all** mnemos paths as relative to `vault_path`
-4. If `.mnemos.yaml` is missing or `vault_path` is unset, fall back to current working directory
+4. If `.mnemos.yaml` is missing or `vault_path` is unset, fall back to `~/.mnemos/vault`
+
+The vault is auto-created at `~/.mnemos/vault` if it doesn't exist and no config specifies otherwise.
 
 Example:
 - If `vault_path: /data/vault`, then `notes/` means `/data/vault/notes/`
 - If `vault_path: /data/vault`, then `memory/MEMORY.md` means `/data/vault/memory/MEMORY.md`
+- If no config exists, `notes/` means `~/.mnemos/vault/notes/`
 
 Never assume `./notes` in the repo checkout is the live vault unless that is the resolved `vault_path`.
 

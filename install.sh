@@ -30,12 +30,14 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --help|-h)
-            echo "Usage: $0 [--adapter <name>] <workspace-path> <vault-path>"
-            echo "       $0 --vault-only <vault-path>"
+            echo "Usage: $0 [--adapter <name>] <workspace-path> [vault-path]"
+            echo "       $0 --vault-only [vault-path]"
             echo ""
             echo "Modes:"
-            echo "  Standard:   ./install.sh <workspace-path> <vault-path>"
-            echo "  Vault-only: ./install.sh --vault-only <vault-path>"
+            echo "  Standard:   ./install.sh <workspace-path> [vault-path]"
+            echo "  Vault-only: ./install.sh --vault-only [vault-path]"
+            echo ""
+            echo "If vault-path is omitted, defaults to ~/.mnemos/vault (auto-created)."
             echo ""
             echo "Adapters (for standard mode):"
             echo "  claude-code  Claude Code, Cursor, Cline (default)"
@@ -59,28 +61,39 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# --- Default vault path ---
+DEFAULT_VAULT="$HOME/.mnemos/vault"
+
 # --- Vault-only mode ---
 if [[ "$VAULT_ONLY" -eq 1 ]]; then
     if [[ $# -lt 1 ]]; then
-        echo "Usage: $0 --vault-only <vault-path>"
-        exit 1
-    fi
-    VAULT="$1"
-    if [[ ! "$VAULT" = /* ]]; then
-        VAULT="$(pwd)/$VAULT"
+        # No path given — use default
+        VAULT="$DEFAULT_VAULT"
+        echo "No vault path specified, using default: $VAULT"
+    else
+        VAULT="$1"
+        if [[ ! "$VAULT" = /* ]]; then
+            VAULT="$(pwd)/$VAULT"
+        fi
     fi
     WORKSPACE=""
 else
-    if [[ $# -lt 2 ]]; then
-        echo "Usage: $0 [--adapter <name>] <workspace-path> <vault-path>"
-        echo "       $0 --vault-only <vault-path>"
+    if [[ $# -lt 1 ]]; then
+        echo "Usage: $0 [--adapter <name>] <workspace-path> [vault-path]"
+        echo "       $0 --vault-only [vault-path]"
         echo "Run with --help for details."
         exit 1
     fi
     WORKSPACE="$(cd "$1" && pwd)"
-    VAULT="$2"
-    if [[ ! "$VAULT" = /* ]]; then
-        VAULT="$(pwd)/$VAULT"
+    if [[ $# -ge 2 ]]; then
+        VAULT="$2"
+        if [[ ! "$VAULT" = /* ]]; then
+            VAULT="$(pwd)/$VAULT"
+        fi
+    else
+        # No vault path given — use default
+        VAULT="$DEFAULT_VAULT"
+        echo "No vault path specified, using default: $VAULT"
     fi
 fi
 

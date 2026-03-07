@@ -34,6 +34,9 @@ For agents with a visible workspace (Claude Code, Cursor, OpenCode, etc.):
 
 # Specify adapter explicitly:
 ./install.sh --adapter opencode <workspace-path> <vault-path>
+
+# Omit vault-path to use the default (~/.mnemos/vault, auto-created):
+./install.sh <workspace-path>
 ```
 
 ### Vault-Only Install
@@ -42,16 +45,21 @@ For research companions or agents without a project workspace:
 
 ```bash
 ./install.sh --vault-only <vault-path>
+
+# Or use the default location:
+./install.sh --vault-only
 ```
+
+**Default vault**: If no vault path is specified, mnemos uses `~/.mnemos/vault` and auto-creates it if needed.
 
 **Research companion mode**: If you want to use mnemos purely for research/learning without a coding project, run the agent directly from the vault:
 
 ```bash
-./install.sh --vault-only ~/research
-cd ~/research && claude
+./install.sh --vault-only
+cd ~/.mnemos/vault && claude
 ```
 
-Hooks auto-detect the vault from cwd — no `.mnemos.yaml` needed. Use `/learn`, `/seed`, `/observe`, and other skills to build knowledge without any "project" code.
+Hooks auto-detect the vault — no `.mnemos.yaml` needed. Use `/learn`, `/seed`, `/observe`, and other skills to build knowledge without any "project" code.
 
 **OpenClaw / cloud agents**: See [OpenClaw Adapter](adapters/openclaw/README.md) for agents that manage their own internal directories.
 

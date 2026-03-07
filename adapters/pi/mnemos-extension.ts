@@ -25,12 +25,14 @@ function truncate(s: string, max = MAX_CONTENT): string {
 }
 
 function resolveVaultPath(cwd: string): string | null {
+  const defaultVault = join(process.env.HOME || "", ".mnemos", "vault");
   const configPath = join(cwd, ".mnemos.yaml");
-  if (!existsSync(configPath)) return null;
+  if (!existsSync(configPath)) {
+    return existsSync(defaultVault) ? defaultVault : null;
+  }
   const content = readFileSync(configPath, "utf-8");
   const match = content.match(/^vault_path:\s*["']?(.+?)["']?\s*$/m);
-  if (!match) return null;
-  let vaultPath = match[1].trim();
+  let vaultPath = match ? match[1].trim() : defaultVault;
   if (!vaultPath.startsWith("/")) {
     vaultPath = resolve(cwd, vaultPath);
   }

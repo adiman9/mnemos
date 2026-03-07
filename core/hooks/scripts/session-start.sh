@@ -12,7 +12,7 @@ MNEMOS_CONFIG="$WORKSPACE_ROOT/.mnemos.yaml"
 [ -f "$MNEMOS_CONFIG" ] || exit 0
 
 VAULT_PATH=$(grep '^vault_path:' "$MNEMOS_CONFIG" | sed 's/vault_path: *//' | tr -d '"' | tr -d "'")
-[ -n "$VAULT_PATH" ] || VAULT_PATH="$WORKSPACE_ROOT"
+[ -n "$VAULT_PATH" ] || VAULT_PATH="$HOME/.mnemos/vault"
 
 # Verify vault exists
 [ -d "$VAULT_PATH" ] || exit 0

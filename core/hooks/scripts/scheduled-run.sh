@@ -35,12 +35,16 @@ resolve_vault_from_config() {
         config_path="$HOME/.mnemos.yaml"
         WORKSPACE="$HOME"
     else
-        return 1
+        echo "$HOME/.mnemos/vault"
+        return 0
     fi
 
     raw=$(grep '^vault_path:' "$config_path" | sed 's/vault_path: *//' | tr -d '"' | tr -d "'" | head -n 1)
     raw=$(trim "$raw")
-    [[ -n "$raw" ]] || return 1
+    if [[ -z "$raw" ]]; then
+        echo "$HOME/.mnemos/vault"
+        return 0
+    fi
 
     if [[ "$raw" = /* ]]; then
         echo "$raw"

@@ -40,9 +40,10 @@ export default (async (input) => {
 
   const configText = await Bun.file(configPath).text();
   const vaultMatch = configText.match(/^\s*vault_path:\s*(.+)\s*$/m);
+  const defaultVault = `${process.env.HOME}/.mnemos/vault`;
   const vaultPath = vaultMatch
     ? vaultMatch[1].trim().replace(/^['"]|['"]$/g, "")
-    : null;
+    : defaultVault;
 
   if (!vaultPath) {
     console.error("[mnemos] No vault_path in .mnemos.yaml");
