@@ -25,6 +25,16 @@ fi
 
 SESSION_ID="${STDIN_SESSION_ID:-${CLAUDE_SESSION_ID:-${CLAUDE_CONVERSATION_ID:-$(date +%Y%m%d-%H%M%S)}}}"
 
+HARNESS="claude-code"
+
+if [ -n "$TRANSCRIPT_PATH" ] && [[ "$TRANSCRIPT_PATH" == *"/.cursor/"* ]]; then
+    HARNESS="cursor"
+    CURSOR_SESSION_ID=$(basename "$TRANSCRIPT_PATH" .jsonl)
+    if [ -n "$CURSOR_SESSION_ID" ]; then
+        SESSION_ID="$CURSOR_SESSION_ID"
+    fi
+fi
+
 if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
     for candidate in \
         "$HOME/.claude/projects/"*"/sessions/${SESSION_ID}.jsonl" \
@@ -34,6 +44,19 @@ if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
             break
         fi
     done
+fi
+
+if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
+    ENCODED_PATH=$(printf '%s' "$WORKSPACE_ROOT" | sed 's|^/||; s|/|-|g')
+    CURSOR_TRANSCRIPTS_DIR="$HOME/.cursor/projects/${ENCODED_PATH}/agent-transcripts"
+    if [ -d "$CURSOR_TRANSCRIPTS_DIR" ]; then
+        LATEST=$(ls -t "$CURSOR_TRANSCRIPTS_DIR/"*"/"*".jsonl" 2>/dev/null | head -1)
+        if [ -n "$LATEST" ] && [ -f "$LATEST" ]; then
+            TRANSCRIPT_PATH="$LATEST"
+            HARNESS="cursor"
+            SESSION_ID=$(basename "$LATEST" .jsonl)
+        fi
+    fi
 fi
 
 [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] || exit 0
@@ -46,7 +69,7 @@ META_FILE="$SESSIONS_DIR/${SESSION_ID}.meta.json"
 mkdir -p "$SESSIONS_DIR"
 [ -f "$CURSOR_FILE" ] || printf '{}\n' > "$CURSOR_FILE"
 
-python3 - "$TRANSCRIPT_PATH" "$SESSIONS_DIR" "$SESSION_ID" "$CURSOR_FILE" "$META_FILE" << 'PYEOF'
+python3 - "$TRANSCRIPT_PATH" "$SESSIONS_DIR" "$SESSION_ID" "$CURSOR_FILE" "$META_FILE" "$HARNESS" << 'PYEOF'
 import json, sys, os
 from datetime import datetime, timezone
 
@@ -55,6 +78,7 @@ sessions_dir = sys.argv[2]
 session_id = sys.argv[3]
 cursor_file = sys.argv[4]
 meta_file = sys.argv[5]
+harness = sys.argv[6]
 output_file = os.path.join(sessions_dir, f"{session_id}.jsonl")
 max_content = 2000
 
@@ -78,7 +102,7 @@ if offset > native_size:
 
 if not os.path.isfile(meta_file):
     with open(meta_file, "w") as f:
-        json.dump({"session_id": session_id, "harness": "claude-code",
+        json.dump({"session_id": session_id, "harness": harness,
                     "start_time": iso_now(), "vault_path": sessions_dir.rsplit("/memory/sessions", 1)[0]}, f)
         f.write("\n")
 
@@ -91,6 +115,17 @@ with open(transcript_path, "rb") as f:
 
 lines = new_data.decode("utf-8", errors="replace").splitlines()
 output_lines = []
+
+def truncate(s):
+    return s[:max_content] + "[truncated]" if len(s) > max_content else s
+
+def extract_text(content_raw):
+    if isinstance(content_raw, str):
+        return content_raw
+    if isinstance(content_raw, list):
+        parts = [p.get("text", "") for p in content_raw if isinstance(p, dict) and p.get("type") == "text"]
+        return "\n".join(p for p in parts if p)
+    return ""
 
 for raw_line in lines:
     raw_line = raw_line.strip()
@@ -107,52 +142,52 @@ for raw_line in lines:
     if not isinstance(msg, dict):
         continue
 
-    role = msg.get("role", "")
+    top_role = obj.get("role", "")
+    msg_role = msg.get("role", "")
     content_raw = msg.get("content", "")
 
-    if line_type == "user" and role == "user":
-        content = content_raw if isinstance(content_raw, str) else ""
-        if isinstance(content_raw, list):
-            parts = [p.get("text", "") for p in content_raw if isinstance(p, dict) and p.get("type") == "text"]
-            content = "\n".join(parts)
+    if line_type:
+        role = msg_role
+        is_user = line_type == "user" and role == "user"
+        is_assistant = line_type == "assistant" and role == "assistant"
+        is_tool_result = line_type == "tool_result"
+    else:
+        role = top_role
+        is_user = role == "user"
+        is_assistant = role == "assistant"
+        is_tool_result = role == "tool_result"
+
+    if is_user:
+        content = extract_text(content_raw)
         if not content:
             continue
-        if len(content) > max_content:
-            content = content[:max_content] + "[truncated]"
-        output_lines.append(json.dumps({"ts": ts, "role": "user", "content": content, "session_id": session_id}))
+        output_lines.append(json.dumps({"ts": ts, "role": "user", "content": truncate(content), "session_id": session_id}))
 
-    elif line_type == "assistant" and role == "assistant":
-        if not isinstance(content_raw, list):
+    elif is_assistant:
+        if isinstance(content_raw, list):
+            text_parts = [p.get("text", "") for p in content_raw if isinstance(p, dict) and p.get("type") == "text"]
+            tool_parts = [p for p in content_raw if isinstance(p, dict) and p.get("type") == "tool_use"]
+        elif isinstance(content_raw, str):
+            text_parts = [content_raw] if content_raw else []
+            tool_parts = []
+        else:
             continue
-        text_parts = [p.get("text", "") for p in content_raw if isinstance(p, dict) and p.get("type") == "text"]
-        tool_parts = [p for p in content_raw if isinstance(p, dict) and p.get("type") == "tool_use"]
 
         text_content = "\n".join(t for t in text_parts if t)
         if text_content:
-            if len(text_content) > max_content:
-                text_content = text_content[:max_content] + "[truncated]"
-            output_lines.append(json.dumps({"ts": ts, "role": "assistant", "content": text_content, "session_id": session_id}))
+            output_lines.append(json.dumps({"ts": ts, "role": "assistant", "content": truncate(text_content), "session_id": session_id}))
 
         for tp in tool_parts:
             tool_name = tp.get("name", "unknown")
             tool_input = json.dumps(tp.get("input", {}))
-            if len(tool_input) > max_content:
-                tool_input = tool_input[:max_content] + "[truncated]"
-            output_lines.append(json.dumps({"ts": ts, "role": "tool_use", "content": tool_input, "tool": tool_name, "session_id": session_id}))
+            output_lines.append(json.dumps({"ts": ts, "role": "tool_use", "content": truncate(tool_input), "tool": tool_name, "session_id": session_id}))
 
-    elif line_type == "tool_result":
-        content = ""
-        if isinstance(content_raw, str):
-            content = content_raw
-        elif isinstance(content_raw, list):
-            parts = [p.get("text", "") for p in content_raw if isinstance(p, dict)]
-            content = "\n".join(parts)
+    elif is_tool_result:
+        content = extract_text(content_raw)
         if not content:
             continue
-        if len(content) > max_content:
-            content = content[:max_content] + "[truncated]"
         tool_name = obj.get("tool_name", msg.get("name", ""))
-        out = {"ts": ts, "role": "tool_result", "content": content, "session_id": session_id}
+        out = {"ts": ts, "role": "tool_result", "content": truncate(content), "session_id": session_id}
         if tool_name:
             out["tool"] = tool_name
         output_lines.append(json.dumps(out))
