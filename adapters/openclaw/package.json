@@ -1,6 +1,6 @@
 {
   "name": "mnemos-openclaw",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "mnemos lifecycle hooks for OpenClaw",
   "repository": {
     "type": "git",
@@ -19,6 +19,9 @@
     "plugin": "./openclaw.plugin.json",
     "hooks": [
       "./hooks/mnemos"
+    ],
+    "extensions": [
+      "./hooks/mnemos/handler.js"
     ]
   },
   "files": [
