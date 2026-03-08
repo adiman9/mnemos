@@ -1,12 +1,12 @@
 {
-  "name": "@mnemos/openclaw-hooks",
+  "name": "mnemos-openclaw",
   "version": "0.1.0",
   "description": "mnemos lifecycle hooks for OpenClaw",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mnemos-ai/mnemos"
+    "url": "https://github.com/adiman9/mnemos"
   },
-  "homepage": "https://github.com/mnemos-ai/mnemos/tree/main/adapters/openclaw",
+  "homepage": "https://github.com/adiman9/mnemos/tree/main/adapters/openclaw",
   "keywords": ["mnemos", "openclaw", "hooks", "memory", "ai-agent"],
   "license": "MIT",
   "openclaw": {

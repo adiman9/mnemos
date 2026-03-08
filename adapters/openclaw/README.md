@@ -15,17 +15,19 @@ mnemos provides a **vault-only** install mode for OpenClaw that initializes the 
 
 ## Install
 
-### Primary: npm install via OpenClaw CLI
+### Primary: Install via OpenClaw CLI
 
-The recommended way to install mnemos for OpenClaw is via npm. This installs the `@mnemos/openclaw-hooks` package and registers it with your OpenClaw gateway.
+The recommended way to install mnemos for OpenClaw is via npm. This installs the plugin and registers its hooks with your OpenClaw gateway.
 
 ```bash
-# Install from npm
-openclaw hooks install @mnemos/openclaw-hooks
-openclaw hooks enable mnemos
+# Install the plugin from npm
+openclaw plugins install mnemos-openclaw
 
-# Configure vault path (optional if .mnemos.yaml exists)
+# Configure vault path
 openclaw config set plugins.mnemos.config.vaultPath ~/mnemos-vault
+
+# Restart gateway to load the plugin
+openclaw gateway restart
 ```
 
 ### Alternative: Vault-Only Install
@@ -135,7 +137,7 @@ If you're using OpenClaw in a mode where it does have a visible workspace direct
 ./install.sh --adapter openclaw <workspace-path> <vault-path>
 ```
 
-This installs the `@mnemos/openclaw-hooks` package to `<workspace>/.openclaw/hooks/mnemos/`. However, the npm-based approach or vault-only approach above is recommended for typical OpenClaw usage.
+This installs the mnemos plugin to `<workspace>/.openclaw/plugins/mnemos/`. However, the npm-based approach or vault-only approach above is recommended for typical OpenClaw usage.
 
 ## Status
 
