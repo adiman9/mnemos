@@ -1,5 +1,5 @@
 {
-  "name": "mnemos",
+  "name": "mnemos-openclaw",
   "version": "0.1.9",
   "type": "module",
   "description": "mnemos lifecycle hooks for OpenClaw",
@@ -19,10 +19,10 @@
   "openclaw": {
     "plugin": "./openclaw.plugin.json",
     "hooks": [
-      "./hooks/mnemos"
+      "./hooks/mnemos-openclaw"
     ],
     "extensions": [
-      "./hooks/mnemos/handler.js"
+      "./hooks/mnemos-openclaw/handler.js"
     ]
   },
   "files": [

@@ -1,5 +1,5 @@
 ---
-name: mnemos
+name: mnemos-openclaw
 description: "3-layer memory system - working memory capture, long-term knowledge curation, and cross-domain dream generation"
 metadata:
   openclaw:
