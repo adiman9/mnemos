@@ -387,8 +387,28 @@ function captureFromSessionContext(event, vaultPath) {
 }
 
 /**
+ * Extract text content from OpenClaw message content array.
+ * OpenClaw stores content as array: [{ type: "text", text: "..." }, { type: "toolCall", ... }]
+ */
+function extractTextFromContent(content) {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  
+  return content
+    .filter(item => item && item.type === 'text' && item.text)
+    .map(item => item.text)
+    .join('\n');
+}
+
+/**
  * Sync messages from OpenClaw's internal session storage.
  * Called on gateway:heartbeat to catch any messages not captured by events.
+ * 
+ * OpenClaw session format (JSONL):
+ * { "type": "message", "id": "...", "timestamp": "...", "message": { "role": "assistant", "content": [...] } }
+ * 
+ * Content is an array of objects like:
+ * [{ "type": "text", "text": "actual message" }, { "type": "toolCall", ... }]
  */
 function syncFromOpenClawSessions(_event, vaultPath) {
   const openclawAgentsDir = path.join(os.homedir(), '.openclaw', 'agents');
@@ -434,12 +454,18 @@ function syncFromOpenClawSessions(_event, vaultPath) {
 
       const outputFile = path.join(sessionsDir, `${sessionId}.jsonl`);
       
-      let existingContent = new Set();
+      // Build fingerprint set for deduplication
+      let existingFingerprints = new Set();
       if (fs.existsSync(outputFile)) {
         fs.readFileSync(outputFile, 'utf-8')
           .split('\n')
           .filter(Boolean)
-          .forEach(line => existingContent.add(line));
+          .forEach(line => {
+            try {
+              const parsed = JSON.parse(line);
+              existingFingerprints.add(`${parsed.ts}:${parsed.role}:${parsed.content?.slice(0, 50)}`);
+            } catch {}
+          });
       }
 
       const fd = fs.openSync(sessionPath, 'r');
@@ -452,21 +478,41 @@ function syncFromOpenClawSessions(_event, vaultPath) {
 
       for (const line of newLines) {
         try {
-          const msg = JSON.parse(line);
-          if (msg.role !== 'assistant') continue;
+          const entry = JSON.parse(line);
+          
+          // Only process message entries
+          if (entry.type !== 'message') continue;
+          
+          // The actual message data is nested in entry.message
+          const msg = entry.message;
+          if (!msg || msg.role !== 'assistant') continue;
+          
+          // Extract text content from the content array
+          const textContent = extractTextFromContent(msg.content);
+          if (!textContent) continue;
+          
+          // Skip system messages like "New session started"
+          if (textContent.includes('New session started')) continue;
+          
+          const ts = entry.timestamp || msg.timestamp || isoNow();
+          const fingerprint = `${ts}:assistant:${textContent.slice(0, 50)}`;
+          
+          if (existingFingerprints.has(fingerprint)) continue;
           
           const outLine = JSON.stringify({
-            ts: msg.ts || msg.timestamp || isoNow(),
+            ts,
             role: 'assistant',
-            content: truncate(msg.content || msg.text || ''),
+            content: truncate(textContent),
             session_id: sessionId,
           });
 
-          if (!existingContent.has(outLine)) {
-            fs.appendFileSync(outputFile, outLine + '\n');
-            synced++;
-          }
-        } catch {}
+          fs.appendFileSync(outputFile, outLine + '\n');
+          existingFingerprints.add(fingerprint);
+          synced++;
+          debug(`Synced assistant message: ${textContent.slice(0, 50)}...`);
+        } catch (err) {
+          debug('Failed to parse line:', err.message);
+        }
       }
 
       cursors[cursorKey] = stat.size;

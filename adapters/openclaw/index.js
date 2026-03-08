@@ -9,8 +9,10 @@ import handler from './hooks/mnemos-openclaw/handler.js';
 
 const HOOK_EVENTS = [
   'gateway:startup',
+  'gateway:heartbeat',
   'message:received', 
   'message:sent',
+  'session:start',
   'command:new',
   'agent:bootstrap',
   'session:compact:before'
