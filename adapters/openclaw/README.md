@@ -23,10 +23,13 @@ The recommended way to install mnemos for OpenClaw is via npm. This installs the
 # Install the plugin from npm
 openclaw plugins install mnemos-openclaw
 
-# Configure vault path (uses ~/.mnemos/vault by default if not set)
-openclaw config set plugins.entries.mnemos.config.vaultPath ~/mnemos-vault
+# Enable the hooks (required — install alone doesn't activate them)
+openclaw hooks enable mnemos
 
-# Restart gateway to load the plugin
+# Optional: Configure custom vault path (defaults to ~/.mnemos/vault, auto-initialized)
+openclaw config set plugins.entries.mnemos.config.vaultPath ~/my-vault
+
+# Restart gateway to load everything
 openclaw gateway restart
 ```
 
@@ -116,18 +119,20 @@ openclaw cron remove <job-id>   # Delete
 
 mnemos hooks into OpenClaw's lifecycle events to capture knowledge and maintain continuity.
 
-### Verified Events
+### Events
 
-| OpenClaw Hook | Purpose | Script |
-|---------------|---------|--------|
+| OpenClaw Hook | Purpose | Handler |
+|---------------|---------|---------|
 | `gateway:startup` | Inject boot context on startup | `session-start.sh` |
+| `message:received` | Capture inbound user messages | Inline capture |
+| `message:sent` | Capture outbound assistant messages | Inline capture |
 | `agent:bootstrap` | Initialize session and identity | `session-start.sh` |
 | `command:new` | Capture transcript before session reset | `session-capture.sh` |
 | `session:compact:before` | Safety flush before context compaction | `pre-compact.sh` |
 
-### Passive Observation Pipeline
+### Transcript Capture Pipeline
 
-OpenClaw captures transcripts incrementally via these hooks. Session transcripts are stored in `{vault}/memory/sessions/{session-id}.jsonl` in standard mnemos JSONL format.
+The `message:received` and `message:sent` events fire on each message and capture to `{vault}/memory/sessions/{session-id}.jsonl` in standard mnemos JSONL format. This uses inline capture logic in the handler (not shell scripts) to avoid path resolution issues in managed hook installs.
 
 The `/observe` skill then reads these transcripts to extract typed observations — this can run manually or via the daily `openclaw cron` schedule.
 
@@ -148,20 +153,37 @@ After setup, confirm mnemos is working:
 ```bash
 # Check plugin is loaded
 openclaw plugins list
-# Should show: mnemos (0.1.2) - loaded
+# Should show: mnemos (0.1.3) - loaded
 
-# Check vault path is configured (no warnings)
-openclaw status
-# Should NOT show "No vault path configured"
+# Check hooks are enabled (not just installed)
+openclaw hooks list --verbose
+# Should show: mnemos - enabled
 
-# Test a hook fires (optional)
-openclaw gateway restart && openclaw status
-# Should see session-start.sh output in logs
+# Check vault is initialized
+ls ~/.mnemos/vault
+# Should show: self/ notes/ memory/ ops/ inbox/ templates/
+
+# Test a hook fires
+openclaw gateway restart
+# Should see "[mnemos] Initialized default vault" or session-start.sh output
 ```
 
-If you see `[mnemos] No vault path configured`, either:
-1. Set the path: `openclaw config set plugins.entries.mnemos.config.vaultPath ~/.mnemos/vault`
-2. Or allow auto-create by restarting (defaults to `~/.mnemos/vault`)
+**Troubleshooting:**
+
+| Symptom | Fix |
+|---------|-----|
+| Hooks not firing | Run `openclaw hooks enable mnemos && openclaw gateway restart` |
+| No session files created | Check `openclaw hooks list --verbose` shows mnemos enabled, then restart gateway |
+| Empty vault directory | Restart gateway — auto-initialization runs on first event |
+| "No vault path configured" | Set path or let it default: `openclaw gateway restart` |
+| Script not found errors | Set `MNEMOS_SCRIPTS_DIR` to point to the scripts directory, or use vault-only mode |
+
+**Debug mode:** Set `MNEMOS_DEBUG=1` in your environment to enable verbose logging from the hook handler.
+
+**Critical:** After any hook install/enable/disable operation, you **must restart the gateway** for changes to take effect:
+```bash
+openclaw gateway restart
+```
 
 ## Status
 

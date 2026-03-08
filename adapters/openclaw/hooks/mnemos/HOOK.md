@@ -6,6 +6,8 @@ metadata:
     emoji: "🧠"
     events:
       - gateway:startup
+      - message:received
+      - message:sent
       - command:new
       - agent:bootstrap
       - session:compact:before
@@ -24,6 +26,16 @@ Integrates mnemos memory system into OpenClaw for persistent knowledge capture a
 - Injects boot context from `memory/MEMORY.md` into the initial session
 - Initializes vault state and loads agent identity from `self/identity.md`
 - Prepares working memory for the session
+
+### On Message Received (`message:received`)
+- Fires when an inbound message arrives from any channel
+- Captures user message to `memory/sessions/{session-id}.jsonl`
+- Uses inline capture logic for reliability in managed hook installs
+
+### On Message Sent (`message:sent`)
+- Fires when an outbound message is sent to the user
+- Captures assistant response to `memory/sessions/{session-id}.jsonl`
+- Uses inline capture logic for reliability in managed hook installs
 
 ### On Command: /new (`command:new`)
 - Runs `session-capture.sh`
