@@ -23,12 +23,14 @@ The recommended way to install mnemos for OpenClaw is via npm. This installs the
 # Install the plugin from npm
 openclaw plugins install mnemos-openclaw
 
-# Configure vault path
-openclaw config set plugins.mnemos.config.vaultPath ~/mnemos-vault
+# Configure vault path (uses ~/.mnemos/vault by default if not set)
+openclaw config set plugins.entries.mnemos.config.vaultPath ~/mnemos-vault
 
 # Restart gateway to load the plugin
 openclaw gateway restart
 ```
+
+> **Note (older OpenClaw versions):** If you're on OpenClaw <0.9, use `plugins.mnemos.config.vaultPath` instead.
 
 ### Alternative: Vault-Only Install
 
@@ -138,6 +140,28 @@ If you're using OpenClaw in a mode where it does have a visible workspace direct
 ```
 
 This installs the mnemos plugin to `<workspace>/.openclaw/plugins/mnemos/`. However, the npm-based approach or vault-only approach above is recommended for typical OpenClaw usage.
+
+## Verify Installation
+
+After setup, confirm mnemos is working:
+
+```bash
+# Check plugin is loaded
+openclaw plugins list
+# Should show: mnemos (0.1.2) - loaded
+
+# Check vault path is configured (no warnings)
+openclaw status
+# Should NOT show "No vault path configured"
+
+# Test a hook fires (optional)
+openclaw gateway restart && openclaw status
+# Should see session-start.sh output in logs
+```
+
+If you see `[mnemos] No vault path configured`, either:
+1. Set the path: `openclaw config set plugins.entries.mnemos.config.vaultPath ~/.mnemos/vault`
+2. Or allow auto-create by restarting (defaults to `~/.mnemos/vault`)
 
 ## Status
 

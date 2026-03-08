@@ -14,7 +14,9 @@
 'use strict';
 
 const { execFileSync } = require('child_process');
+const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -35,21 +37,46 @@ function eventMatches(event, type, action) {
 }
 
 /**
- * Resolve the vault path from the event context or environment.
- * Returns null (with a warning) if neither source provides a path.
+ * Resolve the vault path from the event context, environment, or default.
+ * Precedence: plugins.entries (current) > plugins.mnemos (legacy) > env > default.
+ * Auto-creates the default vault directory if needed.
  */
 function resolveVaultPath(event) {
-  const fromConfig = event.context?.cfg?.plugins?.mnemos?.config?.vaultPath;
-  if (fromConfig) return fromConfig;
+  const cfg = event.context?.cfg ?? {};
+  const pluginId = 'mnemos';
 
+  // Current OpenClaw schema: plugins.entries.<id>.config.vaultPath
+  const fromEntries =
+    cfg.plugins?.entries?.[pluginId]?.config?.vaultPath ||
+    cfg.plugins?.entries?.[pluginId]?.vaultPath;
+
+  // Legacy schema: plugins.<id>.config.vaultPath
+  const fromLegacy =
+    cfg.plugins?.[pluginId]?.config?.vaultPath ||
+    cfg.plugins?.[pluginId]?.vaultPath;
+
+  // Environment variable
   const fromEnv = process.env.MNEMOS_VAULT;
-  if (fromEnv) return fromEnv;
 
-  console.error(
-    '[mnemos] No vault path configured. ' +
-    'Set MNEMOS_VAULT or configure plugins.mnemos.config.vaultPath'
-  );
-  return null;
+  // Pick first available
+  const vault = fromEntries || fromLegacy || fromEnv;
+  if (vault) return vault;
+
+  // Default: ~/.mnemos/vault (auto-create if needed)
+  const defaultVault = path.join(os.homedir(), '.mnemos', 'vault');
+  try {
+    if (!fs.existsSync(defaultVault)) {
+      fs.mkdirSync(defaultVault, { recursive: true });
+      console.log(`[mnemos] Created default vault at ${defaultVault}`);
+    }
+    return defaultVault;
+  } catch (err) {
+    console.error(
+      '[mnemos] No vault path configured and failed to create default. ' +
+      'Set plugins.entries.mnemos.config.vaultPath (preferred) or MNEMOS_VAULT'
+    );
+    return null;
+  }
 }
 
 /**
