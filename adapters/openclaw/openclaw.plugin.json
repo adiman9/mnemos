@@ -1,7 +1,7 @@
 {
   "id": "mnemos",
   "name": "mnemos",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "3-layer memory system for AI agents. Working memory captures what happens. Long-term knowledge curates what matters. The dream layer finds connections nobody asked for.",
   "kind": "memory",
   "configSchema": {

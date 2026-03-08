@@ -376,6 +376,7 @@ async function handler(event) {
   debug(`Unhandled event: ${eventType}:${eventAction}`);
 }
 
-module.exports.default = handler;
+// OpenClaw expects direct function export, not .default
+module.exports = handler;
 module.exports.eventMatches = eventMatches;
 module.exports.captureMessage = captureMessage;
