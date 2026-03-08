@@ -1,6 +1,7 @@
 {
   "name": "mnemos-openclaw",
-  "version": "0.1.7",
+  "version": "0.1.8",
+  "type": "module",
   "description": "mnemos lifecycle hooks for OpenClaw",
   "repository": {
     "type": "git",

@@ -15,12 +15,14 @@
  * when installed as a managed hook (scripts aren't bundled in ~/.openclaw/hooks/).
  */
 
-'use strict';
+import { execFileSync } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import { fileURLToPath } from 'url';
 
-const { execFileSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const MAX_CONTENT_LENGTH = 2000;
 const DEBUG = process.env.MNEMOS_DEBUG === '1';
@@ -376,8 +378,4 @@ async function handler(event) {
   debug(`Unhandled event: ${eventType}:${eventAction}`);
 }
 
-// CommonJS export - handler as the module itself
-module.exports = handler;
-// Attach named exports for testing
-module.exports.eventMatches = eventMatches;
-module.exports.captureMessage = captureMessage;
+export default handler;
