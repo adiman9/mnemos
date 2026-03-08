@@ -6,8 +6,9 @@ metadata:
     emoji: "🧠"
     events:
       - gateway:startup
+      - gateway:heartbeat
       - message:received
-      - message:sent
+      - session:start
       - command:new
       - agent:bootstrap
       - session:compact:before

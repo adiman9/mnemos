@@ -317,6 +317,170 @@ function captureMessage(event, vaultPath) {
   debug(`Captured ${action} message to ${outputFile}`);
 }
 
+/**
+ * Capture assistant response from session:start event context.
+ * session:start fires when a new user turn begins, so we can capture
+ * the previous assistant response from the context.
+ */
+function captureFromSessionContext(event, vaultPath) {
+  const ctx = event.context || {};
+  const messages = ctx.messages || ctx.history || ctx.recentMessages || [];
+  
+  if (!Array.isArray(messages) || messages.length === 0) {
+    debug('No messages in session context');
+    return;
+  }
+
+  const sessionsDir = path.join(vaultPath, 'memory', 'sessions');
+  fs.mkdirSync(sessionsDir, { recursive: true });
+
+  const sessionId = event.sessionKey || 
+                    ctx.sessionKey ||
+                    ctx.conversationId || 
+                    `openclaw-${Date.now()}`;
+
+  const outputFile = path.join(sessionsDir, `${sessionId}.jsonl`);
+  
+  let existingLines = new Set();
+  if (fs.existsSync(outputFile)) {
+    const content = fs.readFileSync(outputFile, 'utf-8');
+    content.split('\n').filter(Boolean).forEach(line => {
+      try {
+        const parsed = JSON.parse(line);
+        existingLines.add(`${parsed.ts}:${parsed.role}:${parsed.content?.slice(0, 50)}`);
+      } catch {}
+    });
+  }
+
+  let captured = 0;
+  for (const msg of messages) {
+    if (!msg || typeof msg !== 'object') continue;
+    
+    const role = (msg.role || '').toLowerCase();
+    if (role !== 'assistant') continue;
+    
+    const content = msg.content || msg.text || '';
+    if (!content) continue;
+    
+    const ts = msg.timestamp ? new Date(msg.timestamp).toISOString() : isoNow();
+    const dedupKey = `${ts}:assistant:${content.slice(0, 50)}`;
+    
+    if (existingLines.has(dedupKey)) {
+      debug('Skipping duplicate assistant message');
+      continue;
+    }
+
+    const line = {
+      ts,
+      role: 'assistant',
+      content: truncate(content),
+      session_id: sessionId,
+    };
+
+    fs.appendFileSync(outputFile, JSON.stringify(line) + '\n');
+    captured++;
+  }
+
+  if (captured > 0) {
+    debug(`Captured ${captured} assistant message(s) from session context`);
+  }
+}
+
+/**
+ * Sync messages from OpenClaw's internal session storage.
+ * Called on gateway:heartbeat to catch any messages not captured by events.
+ */
+function syncFromOpenClawSessions(_event, vaultPath) {
+  const openclawAgentsDir = path.join(os.homedir(), '.openclaw', 'agents');
+  if (!fs.existsSync(openclawAgentsDir)) {
+    debug('OpenClaw agents directory not found');
+    return;
+  }
+
+  const sessionsDir = path.join(vaultPath, 'memory', 'sessions');
+  fs.mkdirSync(sessionsDir, { recursive: true });
+
+  const cursorFile = path.join(sessionsDir, '.sync-cursors.json');
+  let cursors = {};
+  if (fs.existsSync(cursorFile)) {
+    try {
+      cursors = JSON.parse(fs.readFileSync(cursorFile, 'utf-8'));
+    } catch {}
+  }
+
+  const agentDirs = fs.readdirSync(openclawAgentsDir).filter(d => {
+    const stat = fs.statSync(path.join(openclawAgentsDir, d));
+    return stat.isDirectory();
+  });
+
+  let totalSynced = 0;
+
+  for (const agentId of agentDirs) {
+    const agentSessionsDir = path.join(openclawAgentsDir, agentId, 'sessions');
+    if (!fs.existsSync(agentSessionsDir)) continue;
+
+    const sessionFiles = fs.readdirSync(agentSessionsDir)
+      .filter(f => f.endsWith('.jsonl'));
+
+    for (const sessionFile of sessionFiles) {
+      const sessionPath = path.join(agentSessionsDir, sessionFile);
+      const sessionId = sessionFile.replace('.jsonl', '');
+      const cursorKey = `${agentId}:${sessionId}`;
+      
+      const stat = fs.statSync(sessionPath);
+      const lastOffset = cursors[cursorKey] || 0;
+      
+      if (stat.size <= lastOffset) continue;
+
+      const outputFile = path.join(sessionsDir, `${sessionId}.jsonl`);
+      
+      let existingContent = new Set();
+      if (fs.existsSync(outputFile)) {
+        fs.readFileSync(outputFile, 'utf-8')
+          .split('\n')
+          .filter(Boolean)
+          .forEach(line => existingContent.add(line));
+      }
+
+      const fd = fs.openSync(sessionPath, 'r');
+      const buffer = Buffer.alloc(stat.size - lastOffset);
+      fs.readSync(fd, buffer, 0, buffer.length, lastOffset);
+      fs.closeSync(fd);
+
+      const newLines = buffer.toString('utf-8').split('\n').filter(Boolean);
+      let synced = 0;
+
+      for (const line of newLines) {
+        try {
+          const msg = JSON.parse(line);
+          if (msg.role !== 'assistant') continue;
+          
+          const outLine = JSON.stringify({
+            ts: msg.ts || msg.timestamp || isoNow(),
+            role: 'assistant',
+            content: truncate(msg.content || msg.text || ''),
+            session_id: sessionId,
+          });
+
+          if (!existingContent.has(outLine)) {
+            fs.appendFileSync(outputFile, outLine + '\n');
+            synced++;
+          }
+        } catch {}
+      }
+
+      cursors[cursorKey] = stat.size;
+      totalSynced += synced;
+    }
+  }
+
+  if (totalSynced > 0) {
+    debug(`Heartbeat: synced ${totalSynced} assistant message(s)`);
+  }
+
+  fs.writeFileSync(cursorFile, JSON.stringify(cursors, null, 2));
+}
+
 // ---------------------------------------------------------------------------
 // Handler
 // ---------------------------------------------------------------------------
@@ -359,6 +523,26 @@ async function handler(event) {
     } catch (err) {
       console.error('[mnemos] Message capture failed:', err.message);
       debug('Error details:', err.stack);
+    }
+    return;
+  }
+
+  if (eventMatches(event, 'session', 'start')) {
+    debug('Session start - capturing previous assistant response if available');
+    try {
+      captureFromSessionContext(event, vaultPath);
+    } catch (err) {
+      console.error('[mnemos] Session start capture failed:', err.message);
+      debug('Error details:', err.stack);
+    }
+    return;
+  }
+
+  if (eventMatches(event, 'gateway', 'heartbeat')) {
+    try {
+      syncFromOpenClawSessions(event, vaultPath);
+    } catch (err) {
+      debug('Heartbeat sync error:', err.message);
     }
     return;
   }
