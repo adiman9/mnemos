@@ -182,8 +182,8 @@ maintenance:
 
 function findScriptsDir() {
   const candidates = [
-    path.resolve(__dirname, '../../../../core/hooks/scripts'),
     path.resolve(__dirname, '../../scripts'),
+    path.resolve(__dirname, '../../../../core/hooks/scripts'),
     process.env.MNEMOS_SCRIPTS_DIR,
   ].filter(Boolean);
 

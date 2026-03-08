@@ -58,12 +58,12 @@ Integrates mnemos memory system into OpenClaw for persistent knowledge capture a
 ## Installation
 
 ```bash
-openclaw hooks install mnemos
-openclaw hooks enable mnemos
+openclaw hooks install mnemos-openclaw
+openclaw hooks enable mnemos-openclaw
 
 # Verify
 openclaw hooks list --verbose
-openclaw hooks info mnemos
+openclaw hooks info mnemos-openclaw
 openclaw hooks check
 ```
 
@@ -101,6 +101,6 @@ consolidation:
 
 ## Troubleshooting
 
-If `openclaw hooks enable mnemos` fails with hook-not-found, run `openclaw hooks install mnemos` first and verify discovery with `openclaw hooks list --verbose`.
+If `openclaw hooks enable mnemos-openclaw` fails with hook-not-found, run `openclaw hooks install mnemos-openclaw` first and verify discovery with `openclaw hooks list --verbose`.
 
 For vault path resolution issues, ensure `.mnemos.yaml` exists in your workspace or vault root with `vault_path` set.
