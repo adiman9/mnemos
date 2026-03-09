@@ -33,23 +33,24 @@ Tell your agent:
 | Hermes | ✅ | ✅ | — | — |
 | Codex CLI | ❌ | ⚠️ Per-turn | ❌ | ⚠️ Per-turn |
 
-## What Gets Installed
-
-- **Hook** — Captures session transcripts automatically
-- **Skills** — `/observe`, `/consolidate`, `/recall`, `/dream` for knowledge management
-- **Vault** — Persistent storage at `~/.mnemos/vault/`
-- **Cron** — Daily/weekly maintenance jobs (platform-dependent)
-
 ## How It Works
 
-The install files contain step-by-step instructions written FOR your AI agent. The agent:
+All install guides now use the same pattern:
 
-1. Fetches the URL
-2. Reads the markdown instructions
-3. Executes each step using its native tools (`write_file`, `skill_manage`, etc.)
-4. Tells you to restart the gateway/agent
+1. Clone the mnemos repository from GitHub
+2. Run `install.sh` with the appropriate adapter
+3. The installer copies files from the repo to the correct locations
+4. Restart the agent to load hooks
 
-No npm, no CLI tools, no dependencies. Pure agent self-modification.
+**No more recreating files from scratch.** The agent pulls actual source files from the repository.
+
+## What Gets Installed
+
+- **Hooks** — Platform-specific lifecycle hooks from `adapters/`
+- **Skills** — Full skill library from `core/skills/`
+- **Scripts** — Shell scripts from `core/hooks/scripts/`
+- **Vault** — Persistent storage at `~/.mnemos/vault/`
+- **Templates** — Note schemas from `core/templates/`
 
 ## After Installation
 
