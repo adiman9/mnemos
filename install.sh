@@ -46,6 +46,7 @@ while [[ $# -gt 0 ]]; do
             echo "  openclaw     OpenClaw"
             echo "  codex        OpenAI Codex CLI"
             echo "  droids       FactoryAI Droids"
+            echo "  hermes       Hermes agent framework"
             
             echo ""
             echo "Vault-only mode initializes the vault without workspace setup."
@@ -109,6 +110,8 @@ detect_adapter() {
         echo "codex"
     elif [[ -d "$WORKSPACE/.factory" ]] || [[ -d "$HOME/.factory" ]]; then
         echo "droids"
+    elif [[ -d "$HOME/.hermes" ]] || [[ -d "$WORKSPACE/.hermes" ]]; then
+        echo "hermes"
     else
         echo "claude-code"
     fi
@@ -375,6 +378,37 @@ install_openclaw() {
 }
 
 # =============================================================================
+# Adapter: hermes
+# =============================================================================
+
+install_hermes() {
+    echo "Installing skills to ~/.hermes/skills/mnemos/..."
+    mkdir -p "$HOME/.hermes/skills/mnemos"
+    for skill_dir in "$SCRIPT_DIR"/core/skills/*/; do
+        skill_name=$(basename "$skill_dir")
+        target_dir="$HOME/.hermes/skills/mnemos/$skill_name"
+        mkdir -p "$target_dir"
+        cp -r "$skill_dir"* "$target_dir/"
+        echo "  + $skill_name"
+    done
+
+    echo "Installing hook to ~/.hermes/hooks/mnemos/..."
+    mkdir -p "$HOME/.hermes/hooks/mnemos"
+    cp "$SCRIPT_DIR/adapters/hermes/HOOK.yaml" "$HOME/.hermes/hooks/mnemos/"
+    cp "$SCRIPT_DIR/adapters/hermes/handler.py" "$HOME/.hermes/hooks/mnemos/"
+    echo "  + HOOK.yaml"
+    echo "  + handler.py"
+
+    echo ""
+    echo "  Manual step: Restart Hermes gateway to load hook:"
+    echo ""
+    echo "    hermes gateway restart"
+    echo ""
+    echo "  Skills are available via Hermes native skill system."
+    echo "  Cron jobs can be set up via cronjob_manage() tool."
+}
+
+# =============================================================================
 # Adapter: codex
 # =============================================================================
 
@@ -554,9 +588,12 @@ case "$ADAPTER" in
     droids)
         install_droids
         ;;
+    hermes)
+        install_hermes
+        ;;
     *)
         echo "Unknown adapter: $ADAPTER"
-        echo "Available: claude-code, opencode, pi, openclaw, codex, droids"
+        echo "Available: claude-code, opencode, pi, openclaw, codex, droids, hermes"
         exit 1
         ;;
 esac

@@ -1,6 +1,6 @@
 # mnemos
 
-3-layer memory skill-pack for AI coding agents. Works with Claude Code, Cursor, Cline, OpenCode, OpenClaw, and more.
+3-layer memory skill-pack for AI coding agents. Works with Claude Code, Cursor, Cline, OpenCode, Hermes, OpenClaw, and more.
 
 Working memory captures what happens. Long-term knowledge curates what matters. The dream layer finds connections nobody asked for.
 
@@ -73,6 +73,7 @@ Hooks auto-detect the vault — no `.mnemos.yaml` needed. Use `/learn`, `/seed`,
 | OpenCode | `opencode` | Full | Beta |
 | Pi framework | `pi` | Full | Beta |
 | FactoryAI Droids | `droids` | Full | Beta |
+| Hermes | `hermes` | Full | Stable |
 | OpenClaw | `openclaw` | Full | Experimental |
 | Codex CLI | `codex` | Partial (no SessionStart, no per-write hooks) | Experimental |
 
