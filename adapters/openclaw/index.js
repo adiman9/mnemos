@@ -40,17 +40,17 @@ function runSkills(skills, label) {
 
 function shouldRunDaily(lastDaily) {
   const now = new Date();
-  const hour = now.getUTCHours();
-  if (hour !== 9) return false; // Only run at 9am UTC
+  const hour = now.getHours();
+  if (hour !== 9) return false; // Only run at 9am local time
   if (lastDaily && (now - lastDaily) < 23 * 60 * 60 * 1000) return false; // Not within 23h of last run
   return true;
 }
 
 function shouldRunWeekly(lastWeekly) {
   const now = new Date();
-  const day = now.getUTCDay();
-  const hour = now.getUTCHours();
-  if (day !== 0 || hour !== 3) return false; // Only run Sunday 3am UTC
+  const day = now.getDay();
+  const hour = now.getHours();
+  if (day !== 0 || hour !== 3) return false; // Only run Sunday 3am local time
   if (lastWeekly && (now - lastWeekly) < 6 * 24 * 60 * 60 * 1000) return false; // Not within 6 days of last run
   return true;
 }
@@ -88,7 +88,7 @@ export function register(api) {
   api.registerService({
     id: 'mnemos-maintenance-scheduler',
     start: (ctx) => {
-      console.log('[mnemos] Starting maintenance scheduler (checks hourly, runs daily@9am UTC, weekly@Sun 3am UTC)');
+      console.log('[mnemos] Starting maintenance scheduler (checks hourly, runs daily@9am, weekly@Sun 3am local time)');
       
       let lastDaily = null;
       let lastWeekly = null;
