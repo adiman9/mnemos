@@ -401,6 +401,33 @@ function extractTextFromContent(content) {
 }
 
 /**
+ * Extract conversationId from OpenClaw user message metadata.
+ * User messages contain "Conversation info (untrusted metadata)" with sender_id.
+ * Returns format like "agent:main:telegram:direct:1919411188"
+ */
+function extractConversationId(allLines, agentId) {
+  for (const line of allLines) {
+    try {
+      const entry = JSON.parse(line);
+      if (entry.type !== 'message') continue;
+      
+      const msg = entry.message;
+      if (!msg || msg.role !== 'user') continue;
+      
+      const textContent = extractTextFromContent(msg.content);
+      if (!textContent) continue;
+      
+      const senderMatch = textContent.match(/"sender_id":\s*"(\d+)"/);
+      if (senderMatch) {
+        const senderId = senderMatch[1];
+        return `agent:${agentId}:telegram:direct:${senderId}`;
+      }
+    } catch {}
+  }
+  return null;
+}
+
+/**
  * Sync messages from OpenClaw's internal session storage.
  * Called on gateway:heartbeat to catch any messages not captured by events.
  * 
@@ -409,6 +436,9 @@ function extractTextFromContent(content) {
  * 
  * Content is an array of objects like:
  * [{ "type": "text", "text": "actual message" }, { "type": "toolCall", ... }]
+ * 
+ * Merges assistant messages into the same session file as user messages by
+ * extracting the conversationId from user message metadata.
  */
 function syncFromOpenClawSessions(_event, vaultPath) {
   const openclawAgentsDir = path.join(os.homedir(), '.openclaw', 'agents');
@@ -444,17 +474,25 @@ function syncFromOpenClawSessions(_event, vaultPath) {
 
     for (const sessionFile of sessionFiles) {
       const sessionPath = path.join(agentSessionsDir, sessionFile);
-      const sessionId = sessionFile.replace('.jsonl', '');
-      const cursorKey = `${agentId}:${sessionId}`;
+      const uuidSessionId = sessionFile.replace('.jsonl', '');
+      const cursorKey = `${agentId}:${uuidSessionId}`;
       
       const stat = fs.statSync(sessionPath);
       const lastOffset = cursors[cursorKey] || 0;
       
       if (stat.size <= lastOffset) continue;
 
-      const outputFile = path.join(sessionsDir, `${sessionId}.jsonl`);
+      // Read entire file to find conversationId from user messages
+      const fullContent = fs.readFileSync(sessionPath, 'utf-8');
+      const allLines = fullContent.split('\n').filter(Boolean);
       
-      // Build fingerprint set for deduplication
+      // Extract conversationId from user message metadata, fall back to UUID
+      const conversationId = extractConversationId(allLines, agentId) || uuidSessionId;
+      const outputFile = path.join(sessionsDir, `${conversationId}.jsonl`);
+      
+      debug(`Session ${uuidSessionId} -> ${conversationId}`);
+      
+      // Build fingerprint set for deduplication from the TARGET file
       let existingFingerprints = new Set();
       if (fs.existsSync(outputFile)) {
         fs.readFileSync(outputFile, 'utf-8')
@@ -468,6 +506,7 @@ function syncFromOpenClawSessions(_event, vaultPath) {
           });
       }
 
+      // Only process lines after the cursor
       const fd = fs.openSync(sessionPath, 'r');
       const buffer = Buffer.alloc(stat.size - lastOffset);
       fs.readSync(fd, buffer, 0, buffer.length, lastOffset);
@@ -503,7 +542,7 @@ function syncFromOpenClawSessions(_event, vaultPath) {
             ts,
             role: 'assistant',
             content: truncate(textContent),
-            session_id: sessionId,
+            session_id: conversationId,
           });
 
           fs.appendFileSync(outputFile, outLine + '\n');
