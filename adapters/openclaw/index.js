@@ -22,7 +22,7 @@ const HOOK_EVENTS = [
 const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const MAINTENANCE_CHECK_MS = 60 * 60 * 1000; // 1 hour
 
-const HOURLY_SKILLS = '/ralph 10';  // Process up to 10 queue items
+const HOURLY_SKILLS = '/ingest';
 const DAILY_SKILLS = '/observe && /consolidate && /dream --daily && /curiosity && /stats';
 const WEEKLY_SKILLS = '/dream --weekly && /graph health && /validate all && /rethink';
 
