@@ -20,8 +20,7 @@ const HOOK_EVENTS = [
 ];
 
 const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-const DAILY_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
-const WEEKLY_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const MAINTENANCE_CHECK_MS = 60 * 60 * 1000; // 1 hour
 
 const DAILY_SKILLS = '/observe && /consolidate && /dream --daily && /curiosity && /stats';
 const WEEKLY_SKILLS = '/dream --weekly && /graph health && /validate all && /rethink';
@@ -37,6 +36,23 @@ function runSkills(skills, label) {
   } catch (err) {
     console.error(`[mnemos] ${label} failed:`, err.message);
   }
+}
+
+function shouldRunDaily(lastDaily) {
+  const now = new Date();
+  const hour = now.getUTCHours();
+  if (hour !== 9) return false; // Only run at 9am UTC
+  if (lastDaily && (now - lastDaily) < 23 * 60 * 60 * 1000) return false; // Not within 23h of last run
+  return true;
+}
+
+function shouldRunWeekly(lastWeekly) {
+  const now = new Date();
+  const day = now.getUTCDay();
+  const hour = now.getUTCHours();
+  if (day !== 0 || hour !== 3) return false; // Only run Sunday 3am UTC
+  if (lastWeekly && (now - lastWeekly) < 6 * 24 * 60 * 60 * 1000) return false; // Not within 6 days of last run
+  return true;
 }
 
 export function register(api) {
@@ -70,29 +86,30 @@ export function register(api) {
   });
 
   api.registerService({
-    id: 'mnemos-daily-maintenance',
+    id: 'mnemos-maintenance-scheduler',
     start: (ctx) => {
-      console.log('[mnemos] Starting daily maintenance scheduler (interval: 24h)');
-      ctx._dailyTimer = setInterval(() => runSkills(DAILY_SKILLS, 'daily maintenance'), DAILY_INTERVAL_MS);
+      console.log('[mnemos] Starting maintenance scheduler (checks hourly, runs daily@9am UTC, weekly@Sun 3am UTC)');
+      
+      let lastDaily = null;
+      let lastWeekly = null;
+      
+      const checkMaintenance = () => {
+        if (shouldRunDaily(lastDaily)) {
+          lastDaily = new Date();
+          runSkills(DAILY_SKILLS, 'daily maintenance');
+        }
+        if (shouldRunWeekly(lastWeekly)) {
+          lastWeekly = new Date();
+          runSkills(WEEKLY_SKILLS, 'weekly maintenance');
+        }
+      };
+      
+      ctx._maintenanceTimer = setInterval(checkMaintenance, MAINTENANCE_CHECK_MS);
     },
     stop: (ctx) => {
-      if (ctx._dailyTimer) {
-        clearInterval(ctx._dailyTimer);
-        console.log('[mnemos] Daily maintenance scheduler stopped');
-      }
-    }
-  });
-
-  api.registerService({
-    id: 'mnemos-weekly-maintenance',
-    start: (ctx) => {
-      console.log('[mnemos] Starting weekly maintenance scheduler (interval: 7d)');
-      ctx._weeklyTimer = setInterval(() => runSkills(WEEKLY_SKILLS, 'weekly maintenance'), WEEKLY_INTERVAL_MS);
-    },
-    stop: (ctx) => {
-      if (ctx._weeklyTimer) {
-        clearInterval(ctx._weeklyTimer);
-        console.log('[mnemos] Weekly maintenance scheduler stopped');
+      if (ctx._maintenanceTimer) {
+        clearInterval(ctx._maintenanceTimer);
+        console.log('[mnemos] Maintenance scheduler stopped');
       }
     }
   });
