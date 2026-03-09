@@ -22,6 +22,7 @@ const HOOK_EVENTS = [
 const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const MAINTENANCE_CHECK_MS = 60 * 60 * 1000; // 1 hour
 
+const HOURLY_SKILLS = '/ralph 10';  // Process up to 10 queue items
 const DAILY_SKILLS = '/observe && /consolidate && /dream --daily && /curiosity && /stats';
 const WEEKLY_SKILLS = '/dream --weekly && /graph health && /validate all && /rethink';
 
@@ -53,6 +54,12 @@ function shouldRunWeekly(lastWeekly) {
   if (day !== 0 || hour !== 3) return false; // Only run Sunday 3am local time
   if (lastWeekly && (now - lastWeekly) < 6 * 24 * 60 * 60 * 1000) return false; // Not within 6 days of last run
   return true;
+}
+
+function shouldRunHourly(lastHourly) {
+  if (!lastHourly) return true;
+  const now = new Date();
+  return (now - lastHourly) >= 55 * 60 * 1000; // At least 55 mins since last run
 }
 
 export function register(api) {
@@ -88,12 +95,17 @@ export function register(api) {
   api.registerService({
     id: 'mnemos-maintenance-scheduler',
     start: (ctx) => {
-      console.log('[mnemos] Starting maintenance scheduler (checks hourly, runs daily@9am, weekly@Sun 3am local time)');
+      console.log('[mnemos] Starting maintenance scheduler (hourly queue processing, daily@9am, weekly@Sun 3am local time)');
       
+      let lastHourly = null;
       let lastDaily = null;
       let lastWeekly = null;
       
       const checkMaintenance = () => {
+        if (shouldRunHourly(lastHourly)) {
+          lastHourly = new Date();
+          runSkills(HOURLY_SKILLS, 'hourly queue processing');
+        }
         if (shouldRunDaily(lastDaily)) {
           lastDaily = new Date();
           runSkills(DAILY_SKILLS, 'daily maintenance');
