@@ -4,6 +4,27 @@
 
 Working memory captures what happens. Long-term knowledge curates what matters. The dream layer finds connections nobody asked for.
 
+---
+
+## For AI Agents
+
+**If you're an AI agent reading this to install mnemos**, go to [`install/`](install/) for platform-specific guides:
+
+| Your Platform | Install Guide |
+|---------------|---------------|
+| Claude Code / Cursor / Cline | [`install/claude-code.md`](install/claude-code.md) |
+| OpenCode | [`install/opencode.md`](install/opencode.md) |
+| Hermes | [`install/hermes.md`](install/hermes.md) |
+| Pi / Graphone | [`install/pi.md`](install/pi.md) |
+| OpenClaw | [`install/openclaw.md`](install/openclaw.md) |
+| FactoryAI Droids | [`install/droids.md`](install/droids.md) |
+| Codex CLI | [`install/codex.md`](install/codex.md) |
+| Unknown / Auto-detect | [`install/universal.md`](install/universal.md) |
+
+Each guide provides step-by-step instructions. Clone the repo, run the installer, restart your agent.
+
+---
+
 ## Concepts
 
 **Workspace** — The directory where your agent runs. This is where you invoke the agent CLI (e.g., `claude`, `opencode`). For project-based tools like Claude Code or OpenCode, this is your project directory. mnemos installs hooks, skills, and adapter files here.
