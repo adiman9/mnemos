@@ -125,6 +125,7 @@ mnemos/
 | `/ralph` | L2 | Queue orchestration with subagent spawning |
 | `/pipeline` | L2 | End-to-end source processing |
 | `/ingest` | Ops | Auto-seed inbox files and process queue (for scheduled/unattended runs) |
+| `/fetch` | Ops | Fetch URL, analyze content, save research-worthy material to inbox with provenance |
 | `/dream` | L3 | Cross-domain speculative connections (`--daily` context-driven, `--weekly` random sampling) |
 | `/curiosity` | Ops | Proactive research discovery — generates and scores research candidates, auto-triggers `/learn` |
 | `/next` | Ops | What to work on next |
