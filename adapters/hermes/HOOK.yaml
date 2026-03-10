@@ -2,5 +2,6 @@ name: mnemos
 description: Capture sessions for long-term knowledge synthesis
 events:
   - gateway:startup
+  - session:start
   - agent:end
   - session:reset

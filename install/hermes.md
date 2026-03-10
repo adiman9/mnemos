@@ -43,30 +43,50 @@ This will:
 
 ---
 
-## Step 3: Set Up Scheduled Maintenance (Optional)
+## Step 3: Set Up Scheduled Maintenance
 
-For daily maintenance (observation extraction and consolidation):
+Set up cron jobs for automated maintenance. These run via Hermes's built-in scheduler.
+
+**Hourly** — extract observations from session transcripts, process inbox items:
+
+```python
+cronjob_manage(
+    action="create",
+    name="mnemos-hourly",
+    schedule="0 * * * *",
+    prompt="/observe && /ingest",
+    deliver="local"
+)
+```
+
+**Daily** (9 AM) — consolidate to knowledge graph, generate daily connections, discover research opportunities, vault stats:
 
 ```python
 cronjob_manage(
     action="create",
     name="mnemos-daily",
     schedule="0 9 * * *",
-    prompt="/observe && /consolidate",
+    prompt="/consolidate && /dream --daily && /curiosity && /stats",
     deliver="local"
 )
 ```
 
-For weekly synthesis:
+**Weekly** (Sunday 3 AM) — deep cross-domain dream connections, graph health analysis, schema validation, review accumulated tensions:
 
 ```python
 cronjob_manage(
     action="create",
-    name="mnemos-weekly", 
+    name="mnemos-weekly",
     schedule="0 3 * * 0",
-    prompt="/dream --weekly",
+    prompt="/dream --weekly && /graph health && /validate all && /rethink",
     deliver="local"
 )
+```
+
+Verify all three are registered:
+
+```python
+cronjob_manage(action="list")
 ```
 
 ---
@@ -115,11 +135,13 @@ Check these files exist:
 └── templates/
 ```
 
-List cron jobs to verify:
+Verify cron jobs are running:
 
 ```python
 cronjob_manage(action="list")
 ```
+
+You should see `mnemos-hourly`, `mnemos-daily`, and `mnemos-weekly` in the list.
 
 ---
 
@@ -135,6 +157,9 @@ I've set up:
 - Hook to capture conversations at `~/.hermes/hooks/mnemos/`
 - Skills at `~/.hermes/skills/mnemos/`
 - Vault at `~/.mnemos/vault/`
+- Hourly cron: `/observe`, `/ingest`
+- Daily cron (9 AM): `/consolidate`, `/dream --daily`, `/curiosity`, `/stats`
+- Weekly cron (Sunday 3 AM): `/dream --weekly`, `/graph health`, `/validate all`, `/rethink`
 
 **To activate the hook, restart the gateway:**
 
@@ -142,13 +167,14 @@ I've set up:
 hermes gateway restart
 ```
 
-**After restart, I'll automatically capture our sessions.**
+**After restart, I'll automatically capture our sessions and run scheduled maintenance.**
 
 **Quick commands:**
 - `/observe` — Extract insights from recent sessions
 - `/consolidate` — Promote observations to permanent notes
-- `/recall [topic]` — Search your knowledge vault
+- `/learn [topic]` — Research a topic into the vault
 - `/dream` — Find cross-domain connections
+- `/fetch [url]` — Save a URL to inbox for processing
 
 The vault grows silently. Your Hermes memory (MEMORY.md) handles quick notes; mnemos handles deep, long-term knowledge.
 
