@@ -2,83 +2,49 @@
 
 You are installing mnemos, a 3-layer memory system that grows a persistent knowledge vault from your conversations.
 
-**Important**: Follow these steps exactly. This uses the mnemos installer from GitHub.
+**Important**: Follow these steps exactly. This uses the mnemos plugin from npm.
 
 ---
 
 ## Overview
 
 You will install:
-- **Hook** (`~/.openclaw/hooks/mnemos/`) — Captures session transcripts
-- **Skills** (`~/.openclaw/skills/mnemos/`) — Full skill library
-- **Vault** (`~/.mnemos/vault/`) — Persistent knowledge storage
-- **Cron** — Daily maintenance jobs via `openclaw cron`
+- **Plugin** — Hooks + skills bundled together
+- **Vault** (`~/.mnemos/vault/`) — Persistent knowledge storage (auto-initialized)
+- **Cron** — Daily maintenance jobs (built into the plugin)
 
 OpenClaw's native conversation history handles recent context. mnemos handles deep, long-term knowledge synthesis.
 
 ---
 
-## Step 1: Clone the Repository
+## Step 1: Install the Plugin
 
-Clone mnemos to a temporary location:
+Install mnemos from npm:
 
 ```bash
-git clone https://github.com/adiman9/mnemos.git /tmp/mnemos
+openclaw plugins install mnemos-openclaw
+```
+
+This installs:
+- Lifecycle hooks (transcript capture, session start)
+- All 23 skills (`/observe`, `/consolidate`, `/dream`, etc.)
+- Background maintenance scheduler
+
+---
+
+## Step 2: Enable the Hooks
+
+The plugin is installed but hooks need to be enabled:
+
+```bash
+openclaw hooks enable mnemos
 ```
 
 ---
 
-## Step 2: Run the Installer
+## Step 3: Restart the Gateway
 
-Run the installer with the OpenClaw adapter:
-
-```bash
-/tmp/mnemos/install.sh --adapter openclaw ~/.openclaw ~/.mnemos/vault
-```
-
-This will:
-- Initialize the vault at `~/.mnemos/vault/`
-- Copy hook files to `~/.openclaw/hooks/mnemos/`
-- Copy all skills to `~/.openclaw/skills/`
-- Create `.mnemos.yaml` configuration
-
----
-
-## Step 3: Set Up Scheduled Maintenance
-
-OpenClaw has built-in cron. Set up scheduled maintenance:
-
-### Daily maintenance (9 AM)
-
-```bash
-openclaw cron add \
-  --name "mnemos-daily" \
-  --cron "0 9 * * *" \
-  --session isolated \
-  --message "/observe && /consolidate && /dream --daily"
-```
-
-### Weekly synthesis (Sunday 3 AM)
-
-```bash
-openclaw cron add \
-  --name "mnemos-weekly" \
-  --cron "0 3 * * 0" \
-  --session isolated \
-  --message "/dream --weekly && /graph health && /validate all"
-```
-
-To verify cron jobs:
-
-```bash
-openclaw cron list
-```
-
----
-
-## Step 4: Restart the Gateway
-
-Restart OpenClaw to load the new hook:
+Restart OpenClaw to load everything:
 
 ```bash
 openclaw gateway restart
@@ -86,44 +52,23 @@ openclaw gateway restart
 
 ---
 
-## Step 5: Verify Installation
+## Step 4: Verify Installation
 
-Check these files exist:
+Check the plugin is loaded:
 
+```bash
+openclaw plugins list
+# Should show: mnemos-openclaw (0.2.0) - loaded
+
+openclaw hooks list --verbose
+# Should show: mnemos - enabled
 ```
-~/.openclaw/hooks/mnemos/
-├── HOOK.yaml (or hooks.json5)
-├── handler.js (or index.js)
-└── package.json
 
-~/.openclaw/skills/mnemos/
-├── observe/SKILL.md
-├── consolidate/SKILL.md
-├── recall/SKILL.md
-├── dream/SKILL.md
-└── ... (other skills)
-
-~/.mnemos/vault/
-├── self/
-│   ├── identity.md
-│   ├── methodology.md
-│   └── goals.md
-├── notes/
-├── memory/
-│   ├── MEMORY.md
-│   ├── daily/
-│   ├── sessions/
-│   └── .dreams/
-├── ops/
-│   ├── config.yaml
-│   └── schedule.yaml
-├── inbox/
-└── templates/
-```
+The vault is auto-initialized at `~/.mnemos/vault/` on first gateway startup.
 
 ---
 
-## Step 6: Tell the User
+## Step 5: Tell the User
 
 **Say this to the user:**
 
@@ -132,12 +77,11 @@ Check these files exist:
 **mnemos installed successfully!**
 
 I've set up:
-- Hook to capture conversations at `~/.openclaw/hooks/mnemos/`
-- Skills at `~/.openclaw/skills/mnemos/`
-- Vault at `~/.mnemos/vault/`
-- Daily/weekly cron jobs for maintenance
+- Plugin with hooks and skills
+- Vault at `~/.mnemos/vault/` (auto-initialized)
+- Built-in maintenance scheduler (daily @ 9am, weekly @ Sunday 3am)
 
-**To activate the hook, restart the gateway:**
+**To activate, restart the gateway:**
 
 ```bash
 openclaw gateway restart
@@ -148,27 +92,61 @@ openclaw gateway restart
 **Quick commands:**
 - `/observe` — Extract insights from recent sessions
 - `/consolidate` — Promote observations to permanent notes
-- `/recall [topic]` — Search your knowledge vault
+- `/learn [topic]` — Research a topic into the vault
 - `/dream` — Find cross-domain connections
 
-**Manage cron jobs:**
+**The plugin includes built-in scheduling** — no manual cron setup needed. Daily maintenance runs at 9am, weekly synthesis at Sunday 3am.
+
+---
+
+## Optional: Custom Vault Path
+
+By default, the vault is at `~/.mnemos/vault/`. To use a different location:
+
 ```bash
-openclaw cron list
-openclaw cron run mnemos-daily  # Run now
+openclaw config set plugins.entries.mnemos.config.vaultPath ~/my-vault
+openclaw gateway restart
 ```
 
 ---
 
-## Cleanup (Optional)
+## Optional: Manual Cron (Override Built-in)
 
-Remove the temporary clone:
+The plugin includes automatic scheduling. If you prefer manual control:
+
+### Daily maintenance (9 AM)
 
 ```bash
-rm -rf /tmp/mnemos
+openclaw cron add \
+  --name "mnemos-daily" \
+  --cron "0 9 * * *" \
+  --session isolated \
+  --message "/observe && /consolidate && /dream --daily && /curiosity && /stats"
 ```
+
+### Weekly synthesis (Sunday 3 AM)
+
+```bash
+openclaw cron add \
+  --name "mnemos-weekly" \
+  --cron "0 3 * * 0" \
+  --session isolated \
+  --message "/dream --weekly && /graph health && /validate all && /rethink"
+```
+
+---
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Skills not found | Run `openclaw plugins list` — verify mnemos-openclaw is loaded |
+| Hooks not firing | Run `openclaw hooks enable mnemos && openclaw gateway restart` |
+| No session files | Check `~/.mnemos/vault/memory/sessions/` after a conversation |
+| Custom vault not used | Verify config: `openclaw config get plugins.entries.mnemos.config.vaultPath` |
 
 ---
 
 ## Installation Complete
 
-Remind the user to restart the gateway, then mnemos will begin capturing automatically.
+The gateway restart activates everything. mnemos will begin capturing automatically.

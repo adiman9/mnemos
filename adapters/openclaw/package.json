@@ -1,8 +1,8 @@
 {
   "name": "mnemos-openclaw",
-  "version": "0.1.17",
+  "version": "0.2.0",
   "type": "module",
-  "description": "mnemos lifecycle hooks for OpenClaw",
+  "description": "3-layer memory system for AI agents — working memory, long-term knowledge, and cross-domain dreams",
   "repository": {
     "type": "git",
     "url": "https://github.com/adiman9/mnemos"
@@ -22,11 +22,15 @@
       "./index.js"
     ]
   },
+  "scripts": {
+    "prepublishOnly": "./scripts/build-skills.sh"
+  },
   "files": [
     "index.js",
     "openclaw.plugin.json",
     "hooks/",
     "scripts/",
+    "skills/",
     "README.md"
   ]
 }

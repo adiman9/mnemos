@@ -13,3 +13,6 @@ CLAUDE.md
 AGENT.md
 .cursor
 .factory
+
+# Build artifacts (generated during npm publish)
+adapters/openclaw/skills/

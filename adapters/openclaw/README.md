@@ -8,104 +8,65 @@ Unlike Claude Code or OpenCode, OpenClaw doesn't operate in a user-visible works
 
 - **No `.mnemos.yaml`** in a project directory
 - **No hook files** to install in a workspace
-- **Skills** are loaded via OpenClaw's native skill system
-- **Scheduling** uses OpenClaw's built-in `claw cron`, not external schedulers
-
-mnemos provides a **vault-only** install mode for OpenClaw that initializes the vault without workspace setup.
+- **Skills + hooks** bundled together in one npm package
+- **Scheduling** built into the plugin (daily @ 9am, weekly @ Sunday 3am)
 
 ## Install
 
-### Primary: Install via OpenClaw CLI
-
-The recommended way to install mnemos for OpenClaw is via npm. This installs the plugin and registers its hooks with your OpenClaw gateway.
+### One-Step Install via npm
 
 ```bash
-# Install the plugin from npm
 openclaw plugins install mnemos-openclaw
-
-# Enable the hooks (required — install alone doesn't activate them)
 openclaw hooks enable mnemos
+openclaw gateway restart
+```
 
-# Optional: Configure custom vault path (defaults to ~/.mnemos/vault, auto-initialized)
+**That's it.** The plugin includes:
+- All 23 skills (`/observe`, `/consolidate`, `/dream`, etc.)
+- Lifecycle hooks (transcript capture, session start)
+- Built-in maintenance scheduler
+
+The vault is auto-initialized at `~/.mnemos/vault/` on first gateway startup.
+
+### Optional: Custom Vault Path
+
+```bash
 openclaw config set plugins.entries.mnemos.config.vaultPath ~/my-vault
-
-# Restart gateway to load everything
 openclaw gateway restart
 ```
 
 > **Note (older OpenClaw versions):** If you're on OpenClaw <0.9, use `plugins.mnemos.config.vaultPath` instead.
 
-### Alternative: Vault-Only Install
+### Alternative: Manual Install (No npm)
 
-For users who prefer a manual setup or don't want to use npm, you can initialize the vault directly.
-
-#### Step 1: Initialize the Vault
+For users who prefer manual setup:
 
 ```bash
-./install.sh --vault-only ~/mnemos-vault
+git clone https://github.com/adiman9/mnemos.git /tmp/mnemos
+/tmp/mnemos/install.sh --vault-only ~/.mnemos/vault
+cp -r /tmp/mnemos/core/skills/* ~/.openclaw/skills/
+rm -rf /tmp/mnemos
 ```
 
-This creates the vault structure:
-```
-~/mnemos-vault/
-├── self/           # Identity, methodology, goals
-├── notes/          # Knowledge graph (Layer 2)
-├── memory/         # Working memory (Layer 1)
-├── ops/            # Queue, logs, config
-├── inbox/          # Source material
-└── templates/      # Note schemas
-```
+Then set up manual cron jobs (see below).
 
-### Step 2: Configure OpenClaw
+### Optional: Manual Cron (Override Built-in)
 
-Tell OpenClaw where your vault lives. Add to your claw config:
-
-```yaml
-mnemos:
-  vault_path: ~/mnemos-vault
-```
-
-Or set the environment variable:
-```bash
-export MNEMOS_VAULT=~/mnemos-vault
-```
-
-### Step 3: Load Skills
-
-OpenClaw loads skills from its native skill directory. Copy mnemos skills:
+The plugin includes automatic scheduling. If you prefer manual control:
 
 ```bash
-cp -r mnemos/core/skills/* ~/.openclaw/skills/
-```
-
-Or point OpenClaw at the mnemos skills directory in your config.
-
-### Step 4: Set Up Scheduling
-
-OpenClaw has built-in scheduling via `openclaw cron`. **Do not use `schedule.sh`** — it's for external OS schedulers.
-
-OpenClaw's scheduler runs in the Gateway process and persists jobs to `~/.openclaw/cron/jobs.json`. Jobs can run in isolated sessions (recommended for background maintenance) or inject into the main chat.
-
-```bash
-# Daily: observation extraction, consolidation, context-driven dreams, research, stats (9 AM)
 openclaw cron add \
   --name "mnemos-daily" \
   --cron "0 9 * * *" \
   --session isolated \
   --message "/observe && /consolidate && /dream --daily && /curiosity && /stats"
 
-# Weekly: deep dreams, graph health, validation (Sunday 3 AM)
 openclaw cron add \
   --name "mnemos-weekly" \
   --cron "0 3 * * 0" \
   --session isolated \
   --message "/dream --weekly && /graph health && /validate all && /rethink"
 ```
-
-**Options:**
-- `--session isolated` — runs in a dedicated session (recommended for maintenance)
-- `--session main` — injects into your active chat session
-- `--announce --channel last` — posts results to your last active channel
 
 **Manage jobs:**
 ```bash
@@ -136,16 +97,6 @@ The `message:received` and `message:sent` events fire on each message and captur
 
 The `/observe` skill then reads these transcripts to extract typed observations — this can run manually or via the daily `openclaw cron` schedule.
 
-## Alternative: Legacy Workspace Install
-
-If you're using OpenClaw in a mode where it does have a visible workspace directory, you can use the standard install:
-
-```bash
-./install.sh --adapter openclaw <workspace-path> <vault-path>
-```
-
-This installs the mnemos plugin to `<workspace>/.openclaw/plugins/mnemos/`. However, the npm-based approach or vault-only approach above is recommended for typical OpenClaw usage.
-
 ## Verify Installation
 
 After setup, confirm mnemos is working:
@@ -153,7 +104,7 @@ After setup, confirm mnemos is working:
 ```bash
 # Check plugin is loaded
 openclaw plugins list
-# Should show: mnemos (0.1.3) - loaded
+# Should show: mnemos-openclaw (0.2.0) - loaded
 
 # Check hooks are enabled (not just installed)
 openclaw hooks list --verbose
@@ -185,6 +136,37 @@ openclaw gateway restart
 openclaw gateway restart
 ```
 
+## What's in the Package
+
+The npm package bundles everything:
+
+```
+mnemos-openclaw/
+├── index.js              # Plugin entry point (hooks + scheduler)
+├── openclaw.plugin.json  # Plugin manifest
+├── hooks/                # Lifecycle hook handlers
+├── scripts/              # Build scripts
+└── skills/               # All 23 skills (bundled automatically)
+    ├── observe/SKILL.md
+    ├── consolidate/SKILL.md
+    ├── dream/SKILL.md
+    └── ... (20 more)
+```
+
+Skills are declared in `openclaw.plugin.json` via the `skills` field. OpenClaw discovers them automatically — no manual copying required.
+
+## Development
+
+To build the skills into the package before publishing:
+
+```bash
+cd adapters/openclaw
+./scripts/build-skills.sh
+npm publish
+```
+
+The `prepublishOnly` script runs `build-skills.sh` automatically.
+
 ## Status
 
-**Beta.** The npm install and vault-only workflows are the recommended approaches. Verified for OpenClaw v0.8.0+.
+**Stable.** The npm install is the recommended approach. Verified for OpenClaw v0.8.0+.
